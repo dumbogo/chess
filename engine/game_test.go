@@ -37,6 +37,7 @@ func TestTurn(t *testing.T) {
 }
 
 func TestMove(t *testing.T) {
+	// TODO: add testcase when movement eats a piece
 	assert := assert.New(t)
 	ok, e := testCaseGame.Move(testPlayerWhite, A2, A3)
 	assert.Equal(true, ok)
@@ -44,9 +45,24 @@ func TestMove(t *testing.T) {
 	assert.Equal(testPlayerBlack, testCaseGame.Turn())
 	// This is tooo deph, need to shorten method to return squares
 	assert.Equal(true, testCaseGame.Board().Squares()[A2].Empty)
-	assert.Equal(nil, testCaseGame.Board().Squares()[A2].Piece)
+	assert.Empty(testCaseGame.Board().Squares()[A2].Piece)
 	assert.Equal(false, testCaseGame.Board().Squares()[A3].Empty)
 	assert.Equal(PawnIdentifier, testCaseGame.Board().Squares()[A3].Piece.Identifier())
+
+	// Try to move an empty square
+	ok, e = testCaseGame.Move(testPlayerBlack, A4, A5)
+	assert.Equal(false, ok)
+	assert.Empty(e)
+	// Move pawn
+	ok, e = testCaseGame.Move(testPlayerBlack, A7, A5)
+	assert.Equal(true, ok)
+	assert.Empty(e)
+
+	// whitep tries to move black pawn
+	ok, e = testCaseGame.Move(testPlayerBlack, B7, B5)
+	assert.Equal(false, ok)
+	assert.Empty(e)
+
 }
 
 func TestIsCheckBy(t *testing.T) {

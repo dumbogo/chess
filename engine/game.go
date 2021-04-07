@@ -24,28 +24,49 @@ type Game interface {
 	Board() Board
 }
 
-// NewGame creates new Game
-func NewGame(name string, black, white Player) (Game, error) {
-	if white.Color != WhiteColor || black.Color != BlackColor {
-		return nil, errors.New("Must define black and white players")
-	}
-	return &game{
-		name:  name,
-		board: NewBoard(&white, &black),
-		turn:  white,
-		white: white,
-		black: black,
-	}, nil
-}
-
 type game struct {
 	name  string
 	board Board
 	turn  Player
 	white Player
 	black Player
+
+	whitePieces map[PieceIdentifier]uint8
+	blackPieces map[PieceIdentifier]uint8
 }
 
+// NewGame creates new Game
+func NewGame(name string, black, white Player) (Game, error) {
+	if white.Color != WhiteColor || black.Color != BlackColor {
+		return nil, errors.New("Must define black and white players")
+	}
+
+	blackPieces := map[PieceIdentifier]uint8{
+		RookIdentifier:   2,
+		KnightIdentifier: 2,
+		BishopIdentifier: 2,
+		QueenIdentifier:  1,
+		KingIdentifier:   1,
+		PawnIdentifier:   8,
+	}
+	whitePieces := map[PieceIdentifier]uint8{
+		RookIdentifier:   2,
+		KnightIdentifier: 2,
+		BishopIdentifier: 2,
+		QueenIdentifier:  1,
+		KingIdentifier:   1,
+		PawnIdentifier:   8,
+	}
+	return &game{
+		name:        name,
+		board:       NewBoard(&white, &black),
+		turn:        white,
+		white:       white,
+		black:       black,
+		blackPieces: blackPieces,
+		whitePieces: whitePieces,
+	}, nil
+}
 func (g *game) Turn() Player {
 	return g.turn
 }
@@ -62,16 +83,14 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 		return false, nil
 	}
 	canMove := squareFrom.Piece.CanMove(squareFrom, squareTo)
-	if canMove == false {
+	if !canMove {
 		return false, nil
 	}
 
 	if !squareTo.Empty {
 		pieceToEat := squareTo.Piece
-		if pieceToEat.Color() == g.Turn().Color {
-			return false, nil
-		}
 		g.board.EatPiece(to)
+		g.removePiecePlayer(pieceToEat)
 	}
 
 	squareTo.Piece = pieceToMove
@@ -109,5 +128,15 @@ func (g *game) changeTurn() {
 		g.turn = g.black
 	} else {
 		g.turn = g.white
+	}
+}
+
+func (g *game) removePiecePlayer(p Piece) {
+	color := p.Color()
+	switch color {
+	case BlackColor:
+		g.blackPieces[p.Identifier()]--
+	case WhiteColor:
+		g.whitePieces[p.Identifier()]--
 	}
 }

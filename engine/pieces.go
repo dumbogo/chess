@@ -1,6 +1,8 @@
 package engine
 
-import "errors"
+import (
+	"errors"
+)
 
 // Piece piece type
 type Piece interface {
@@ -8,8 +10,8 @@ type Piece interface {
 	Identifier() PieceIdentifier
 	// Color piece color
 	Color() Color
-	// CanMove review if Piece can be moved from Square, to Square
-	// returns true if it is possible
+	// CanMove check if piece can be moved from, to Square,
+	// returns true if it's possible
 	CanMove(from, to Square) bool
 }
 
@@ -121,7 +123,18 @@ func NewKing(color Color) Piece {
 	}
 }
 
+// TODO: WIP
 func (p *pawn) CanMove(from, to Square) bool {
-	// TODO: implement
+	// if outOfSquares(from.Coordinates) || outOfSquares(to.Coordinates) {
+	// 	return false
+	// }
+	// if from.Piece.Color() == to.Piece.Color() {
+	// 	return false
+	// }
+
+	// // Make validation if movement is valid with the piece
+	// if to.Empty {
+	// 	return true
+	// }
 	return true
 }
