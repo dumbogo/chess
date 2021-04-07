@@ -69,7 +69,7 @@ func NewPawn(color Color) Piece {
 // NewBishop creates Bishop piece
 func NewBishop(color Color) Piece {
 	p := piece{
-		pieceIdentifier: PawnIdentifier,
+		pieceIdentifier: BishopIdentifier,
 		color:           color,
 	}
 	return &bishop{
@@ -119,4 +119,9 @@ func NewKing(color Color) Piece {
 	return &king{
 		piece: p,
 	}
+}
+
+func (p *pawn) CanMove(from, to Square) bool {
+	// TODO: implement
+	return true
 }

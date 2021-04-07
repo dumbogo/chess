@@ -1,28 +1,62 @@
 package engine
 
-// Board gameboard
-type Board struct {
-	WhitePlayer Player
-	WhitePieces [16]Piece
+// Board chess playable board
+type Board interface {
+	FillSquares()
+	EatPiece(loc SquareIdentifier) Piece
+	WhitePlayer() *Player
+	BlackPlayer() *Player
+	Squares() Squares
+}
 
-	BlackPlayer Player
-	BlackPieces [16]Piece
-	Squares     Squares
+type board struct {
+	whitePlayer *Player
+	whitePieces map[PieceIdentifier]uint8
+
+	blackPlayer *Player
+	blackPieces map[PieceIdentifier]uint8
+	squares     Squares
 }
 
 // NewBoard creates a new Board to play
-func NewBoard(whitePlayer, blackPlayer Player) Board {
-	board := Board{
-		BlackPlayer: blackPlayer,
-		WhitePlayer: whitePlayer,
+func NewBoard(whitePlayer, blackPlayer *Player) Board {
+	blackPieces := map[PieceIdentifier]uint8{
+		RookIdentifier:   2,
+		KnightIdentifier: 2,
+		BishopIdentifier: 2,
+		QueenIdentifier:  1,
+		KingIdentifier:   1,
+		PawnIdentifier:   8,
+	}
+	whitePieces := map[PieceIdentifier]uint8{
+		RookIdentifier:   2,
+		KnightIdentifier: 2,
+		BishopIdentifier: 2,
+		QueenIdentifier:  1,
+		KingIdentifier:   1,
+		PawnIdentifier:   8,
+	}
+	board := board{
+		blackPlayer: blackPlayer,
+		blackPieces: blackPieces,
+		whitePlayer: whitePlayer,
+		whitePieces: whitePieces,
 	}
 	board.FillSquares()
-	return board
+	return &board
+}
+
+func (b *board) WhitePlayer() *Player {
+	return b.whitePlayer
+}
+
+func (b *board) BlackPlayer() *Player {
+	return b.blackPlayer
 }
 
 // FillSquares fill squares board with new game
-func (b *Board) FillSquares() {
-	b.Squares = Squares{
+func (b *board) FillSquares() {
+	b.squares = Squares{
 		// White pieces
 		A1: Square{Empty: false, Coordinates: Coordinate{0, 0}, SquareIdentifier: A1, Piece: NewRook(WhiteColor)},
 		B1: Square{Empty: false, Coordinates: Coordinate{0, 1}, SquareIdentifier: B1, Piece: NewKnight(WhiteColor)},
@@ -69,36 +103,65 @@ func (b *Board) FillSquares() {
 		G3: Square{Empty: true, Coordinates: Coordinate{2, 6}, SquareIdentifier: G3},
 		H3: Square{Empty: true, Coordinates: Coordinate{2, 7}, SquareIdentifier: H3},
 
-		// TODO: end this
-		A4: Square{Empty: true},
-		B4: Square{Empty: true},
-		C4: Square{Empty: true},
-		D4: Square{Empty: true},
-		E4: Square{Empty: true},
-		F4: Square{Empty: true},
-		G4: Square{Empty: true},
-		H4: Square{Empty: true},
+		A4: Square{Empty: true, Coordinates: Coordinate{3, 0}, SquareIdentifier: A4},
+		B4: Square{Empty: true, Coordinates: Coordinate{3, 1}, SquareIdentifier: B4},
+		C4: Square{Empty: true, Coordinates: Coordinate{3, 2}, SquareIdentifier: C4},
+		D4: Square{Empty: true, Coordinates: Coordinate{3, 3}, SquareIdentifier: D4},
+		E4: Square{Empty: true, Coordinates: Coordinate{3, 4}, SquareIdentifier: E4},
+		F4: Square{Empty: true, Coordinates: Coordinate{3, 5}, SquareIdentifier: F4},
+		G4: Square{Empty: true, Coordinates: Coordinate{3, 6}, SquareIdentifier: G4},
+		H4: Square{Empty: true, Coordinates: Coordinate{3, 7}, SquareIdentifier: H4},
 
-		A5: Square{Empty: true},
-		B5: Square{Empty: true},
-		C5: Square{Empty: true},
-		D5: Square{Empty: true},
-		E5: Square{Empty: true},
-		F5: Square{Empty: true},
-		G5: Square{Empty: true},
-		H5: Square{Empty: true},
+		A5: Square{Empty: true, Coordinates: Coordinate{4, 0}, SquareIdentifier: A5},
+		B5: Square{Empty: true, Coordinates: Coordinate{4, 1}, SquareIdentifier: B5},
+		C5: Square{Empty: true, Coordinates: Coordinate{4, 2}, SquareIdentifier: C5},
+		D5: Square{Empty: true, Coordinates: Coordinate{4, 3}, SquareIdentifier: D5},
+		E5: Square{Empty: true, Coordinates: Coordinate{4, 4}, SquareIdentifier: E5},
+		F5: Square{Empty: true, Coordinates: Coordinate{4, 5}, SquareIdentifier: F5},
+		G5: Square{Empty: true, Coordinates: Coordinate{4, 6}, SquareIdentifier: G5},
+		H5: Square{Empty: true, Coordinates: Coordinate{4, 7}, SquareIdentifier: H5},
 
-		A6: Square{Empty: true},
-		B6: Square{Empty: true},
-		C6: Square{Empty: true},
-		D6: Square{Empty: true},
-		E6: Square{Empty: true},
-		F6: Square{Empty: true},
-		G6: Square{Empty: true},
-		H6: Square{Empty: true},
-		// TODO: up to this point
+		A6: Square{Empty: true, Coordinates: Coordinate{5, 0}, SquareIdentifier: A6},
+		B6: Square{Empty: true, Coordinates: Coordinate{5, 1}, SquareIdentifier: B6},
+		C6: Square{Empty: true, Coordinates: Coordinate{5, 2}, SquareIdentifier: C6},
+		D6: Square{Empty: true, Coordinates: Coordinate{5, 3}, SquareIdentifier: D6},
+		E6: Square{Empty: true, Coordinates: Coordinate{5, 4}, SquareIdentifier: E6},
+		F6: Square{Empty: true, Coordinates: Coordinate{5, 5}, SquareIdentifier: F6},
+		G6: Square{Empty: true, Coordinates: Coordinate{5, 6}, SquareIdentifier: G6},
+		H6: Square{Empty: true, Coordinates: Coordinate{5, 7}, SquareIdentifier: H6},
 	}
+}
+
+// EatPiece removes a piece from Board location, subtract it from player
+func (b *board) EatPiece(loc SquareIdentifier) Piece {
+	// TODO: WIP
+	// SHould remove piece game logic be located here ?
+
+	var piece Piece
+	square := b.squares[loc]
+	square.Empty = true
+	piece = square.Piece
+	// 	square.Piece = Piece{}
+	return piece
+}
+
+func (b *board) Squares() Squares {
+	return b.squares
 }
 
 // Squares board squares, total of 8*8
 type Squares map[SquareIdentifier]Square
+
+// Square type val
+type Square struct {
+	Empty            bool
+	Piece            Piece
+	Coordinates      Coordinate
+	SquareIdentifier SquareIdentifier
+}
+
+// Coordinate a coordinate within the Board, starting at 0,0 = A1, 8,8 = H8
+type Coordinate struct {
+	X uint8
+	Y uint8
+}

@@ -25,20 +25,6 @@ const (
 	KingIdentifier
 )
 
-// Coordinate a coordinate within the Board, starting at 0,0 = A1, 8,8 = H8
-type Coordinate struct {
-	X uint8
-	Y uint8
-}
-
-// Square type val
-type Square struct {
-	Empty            bool
-	Piece            Piece
-	Coordinates      Coordinate
-	SquareIdentifier SquareIdentifier
-}
-
 // SquareIdentifier square location identifier
 type SquareIdentifier uint8
 

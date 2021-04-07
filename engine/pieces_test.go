@@ -12,3 +12,5 @@ func TestNewPawn(t *testing.T) {
 	assert.Equal(PawnIdentifier, pawn.Identifier())
 	assert.Equal(BlackColor, pawn.Color())
 }
+
+// TODO: add tests CanMove interface method for each piece
