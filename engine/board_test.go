@@ -1,7 +1,6 @@
 package engine
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -62,8 +61,6 @@ func TestNewBoard(t *testing.T) {
 
 func TestEatPiece(t *testing.T) {
 	assert := assert.New(t)
-
-	fmt.Printf("here im not\n")
 	board := testableBoard()
 
 	piece := board.EatPiece(H7)
