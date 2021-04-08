@@ -2,7 +2,7 @@ package engine
 
 // Board chess playable board
 type Board interface {
-	FillSquares()
+	// EatPiece removes a piece from Board location return Piece
 	EatPiece(loc SquareIdentifier) Piece
 	WhitePlayer() *Player
 	BlackPlayer() *Player
@@ -22,7 +22,7 @@ func NewBoard(whitePlayer, blackPlayer *Player) Board {
 		blackPlayer: blackPlayer,
 		whitePlayer: whitePlayer,
 	}
-	board.FillSquares()
+	board.fillSquares()
 	return &board
 }
 
@@ -35,7 +35,7 @@ func (b *board) BlackPlayer() *Player {
 }
 
 // FillSquares fill squares board with new game
-func (b *board) FillSquares() {
+func (b *board) fillSquares() {
 	b.squares = Squares{
 		// White pieces
 		A1: Square{Empty: false, Coordinates: Coordinate{0, 0}, SquareIdentifier: A1, Piece: NewRook(WhiteColor)},
@@ -112,7 +112,6 @@ func (b *board) FillSquares() {
 	}
 }
 
-// EatPiece removes a piece from Board location return Piece
 func (b *board) EatPiece(loc SquareIdentifier) Piece {
 	square := b.squares[loc]
 	piece := square.Piece
@@ -147,11 +146,4 @@ const MAXX = 7
 type Coordinate struct {
 	X uint8
 	Y uint8
-}
-
-func outOfSquares(c Coordinate) bool {
-	if c.X > MAXX || c.Y > MAXY {
-		return true
-	}
-	return false
 }
