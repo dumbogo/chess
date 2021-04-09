@@ -34,17 +34,17 @@ func (m *MockPiece) EXPECT() *MockPieceMockRecorder {
 }
 
 // CanMove mocks base method.
-func (m *MockPiece) CanMove(from, to Square) bool {
+func (m *MockPiece) CanMove(board Board, from, to Square) bool {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CanMove", from, to)
+	ret := m.ctrl.Call(m, "CanMove", board, from, to)
 	ret0, _ := ret[0].(bool)
 	return ret0
 }
 
 // CanMove indicates an expected call of CanMove.
-func (mr *MockPieceMockRecorder) CanMove(from, to interface{}) *gomock.Call {
+func (mr *MockPieceMockRecorder) CanMove(board, from, to interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanMove", reflect.TypeOf((*MockPiece)(nil).CanMove), from, to)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CanMove", reflect.TypeOf((*MockPiece)(nil).CanMove), board, from, to)
 }
 
 // Color mocks base method.
@@ -73,4 +73,18 @@ func (m *MockPiece) Identifier() PieceIdentifier {
 func (mr *MockPieceMockRecorder) Identifier() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Identifier", reflect.TypeOf((*MockPiece)(nil).Identifier))
+}
+
+// PossibleMovements mocks base method.
+func (m *MockPiece) PossibleMovements(board Board, from Square) []Square {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "PossibleMovements", board, from)
+	ret0, _ := ret[0].([]Square)
+	return ret0
+}
+
+// PossibleMovements indicates an expected call of PossibleMovements.
+func (mr *MockPieceMockRecorder) PossibleMovements(board, from interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PossibleMovements", reflect.TypeOf((*MockPiece)(nil).PossibleMovements), board, from)
 }

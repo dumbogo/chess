@@ -12,7 +12,8 @@ type Piece interface {
 	Color() Color
 	// CanMove check if piece can be moved from, to Square,
 	// returns true if it's possible
-	CanMove(from, to Square) bool
+	CanMove(board Board, from, to Square) bool
+	PossibleMovements(board Board, from Square) []Square
 }
 
 type piece struct {
@@ -29,8 +30,12 @@ func (p *piece) Color() Color {
 	return p.color
 }
 
-func (p *piece) CanMove(from, to Square) bool {
-	panic(errors.New("must implement by implemented interfaces"))
+func (p *piece) CanMove(b Board, from, to Square) bool {
+	panic(errors.New("Must implement interface method"))
+}
+
+func (p *piece) PossibleMovements(Board, Square) []Square {
+	panic(errors.New("Must implement interface method"))
 }
 
 type pawn struct {
@@ -124,17 +129,12 @@ func NewKing(color Color) Piece {
 }
 
 // TODO: WIP
-func (p *pawn) CanMove(from, to Square) bool {
-	// if outOfSquares(from.Coordinates) || outOfSquares(to.Coordinates) {
-	// 	return false
-	// }
-	// if from.Piece.Color() == to.Piece.Color() {
-	// 	return false
-	// }
-
-	// // Make validation if movement is valid with the piece
-	// if to.Empty {
-	// 	return true
-	// }
+func (p *pawn) CanMove(board Board, from, to Square) bool {
+	// check if first movement by color
+	if from.Piece.Color() == BlackColor {
+		if from.Coordinates.Y == 6 {
+			// Here, I know It's the first movement
+		}
+	}
 	return true
 }

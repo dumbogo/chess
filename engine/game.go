@@ -4,10 +4,22 @@ import (
 	"errors"
 )
 
+// TODO: list
+// Pawn Promotion
+
 // Player gammer
 type Player struct {
 	Name  string
 	Color Color
+}
+
+// Movement a movement made
+type Movement struct {
+	Player     Player
+	PieceMoved Piece
+	PieceEaten Piece
+	From       SquareIdentifier
+	To         SquareIdentifier
 }
 
 // Game playable game
@@ -17,11 +29,13 @@ type Game interface {
 	// Move moves a piece in the Board, returns true if moved
 	Move(player Player, form, to SquareIdentifier) (bool, error)
 	// IsCheckBy returns Player making check
-	IsCheckBy() Player
+	IsCheckBy(Player) bool
 	// IsCheckmateBy returns Player making checkmate
-	IsCheckmateBy() Player
+	IsCheckmateBy(Player) bool
 	// Board get board
 	Board() Board
+	// Movements get all historic movements
+	Movements() []Movement
 }
 
 type game struct {
@@ -33,6 +47,7 @@ type game struct {
 
 	whitePieces map[PieceIdentifier]uint8
 	blackPieces map[PieceIdentifier]uint8
+	movements   []Movement
 }
 
 // NewGame creates new Game
@@ -82,15 +97,18 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 	if pieceToMove.Color() != g.Turn().Color {
 		return false, nil
 	}
-	canMove := squareFrom.Piece.CanMove(squareFrom, squareTo)
+	canMove := squareFrom.Piece.CanMove(g.board, squareFrom, squareTo)
 	if !canMove {
 		return false, nil
 	}
 
+	// TODO: check if En passant to delete Pawn
+	// TODO: check Castling(short & large)
+	var pieceEaten Piece
 	if !squareTo.Empty {
-		pieceToEat := squareTo.Piece
+		pieceEaten = squareTo.Piece
 		g.board.EatPiece(to)
-		g.removePiecePlayer(pieceToEat)
+		g.removePiecePlayer(pieceEaten)
 	}
 
 	squareTo.Piece = pieceToMove
@@ -100,17 +118,28 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 	g.board.Squares()[to] = squareTo
 	g.board.Squares()[from] = squareFrom
 	g.changeTurn()
+	g.movements = append(g.movements, Movement{
+		Player:     player,
+		PieceMoved: pieceToMove,
+		PieceEaten: pieceEaten,
+		From:       from,
+		To:         to,
+	})
 	return true, nil
 }
 
-func (g *game) IsCheckBy() Player {
-	// TODO: End
-	return g.white
+func (g *game) Movements() []Movement {
+	return g.movements
 }
 
-func (g *game) IsCheckmateBy() Player {
+func (g *game) IsCheckBy(p Player) bool {
+	// TODO: End
+	return false
+}
+
+func (g *game) IsCheckmateBy(p Player) bool {
 	// TODO: end
-	return g.black
+	return false
 }
 
 func (g *game) Board() Board {
