@@ -14,6 +14,8 @@ type Piece interface {
 	// returns true if it's possible
 	CanMove(board Board, from, to Square) bool
 	PossibleMovements(board Board, from Square) []Square
+
+	String() string
 }
 
 type piece struct {
@@ -28,6 +30,10 @@ func (p *piece) Identifier() PieceIdentifier {
 
 func (p *piece) Color() Color {
 	return p.color
+}
+
+func (p *piece) String() string {
+	return "AA"
 }
 
 func (p *piece) CanMove(b Board, from, to Square) bool {
@@ -137,4 +143,11 @@ func (p *pawn) CanMove(board Board, from, to Square) bool {
 		}
 	}
 	return true
+}
+
+func (p *pawn) String() string {
+	if p.Color() == WhiteColor {
+		return "wp"
+	}
+	return "bp"
 }

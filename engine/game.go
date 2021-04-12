@@ -36,6 +36,8 @@ type Game interface {
 	Board() Board
 	// Movements get all historic movements
 	Movements() []Movement
+
+	String() string
 }
 
 type game struct {
@@ -148,8 +150,7 @@ func (g *game) Board() Board {
 
 // String returns ASCII representation of the game
 func (g *game) String() string {
-	// TODO: End
-	return ""
+	return g.board.String()
 }
 
 func (g *game) changeTurn() {

@@ -1,5 +1,11 @@
 package engine
 
+import (
+	"strings"
+
+	"github.com/olekukonko/tablewriter"
+)
+
 // Board chess playable board
 type Board interface {
 	// EatPiece removes a piece from Board location return Piece
@@ -7,6 +13,7 @@ type Board interface {
 	WhitePlayer() *Player
 	BlackPlayer() *Player
 	Squares() Squares
+	String() string
 }
 
 type board struct {
@@ -125,6 +132,39 @@ func (b *board) Squares() Squares {
 	return b.squares
 }
 
+func (b *board) String() string {
+	var builder strings.Builder
+
+	a1, b1, c1, d1, e1, f1, g1, h1 := b.squares[A1], b.squares[B1], b.squares[C1], b.squares[D1], b.squares[E1], b.squares[F1], b.squares[G1], b.squares[H1]
+	a2, b2, c2, d2, e2, f2, g2, h2 := b.squares[A2], b.squares[B2], b.squares[C2], b.squares[D2], b.squares[E2], b.squares[F2], b.squares[G2], b.squares[H2]
+	a3, b3, c3, d3, e3, f3, g3, h3 := b.squares[A3], b.squares[B3], b.squares[C3], b.squares[D3], b.squares[E3], b.squares[F3], b.squares[G3], b.squares[H3]
+	a4, b4, c4, d4, e4, f4, g4, h4 := b.squares[A4], b.squares[B4], b.squares[C4], b.squares[D4], b.squares[E4], b.squares[F4], b.squares[G4], b.squares[H4]
+	a5, b5, c5, d5, e5, f5, g5, h5 := b.squares[A5], b.squares[B5], b.squares[C5], b.squares[D5], b.squares[E5], b.squares[F5], b.squares[G5], b.squares[H5]
+	a6, b6, c6, d6, e6, f6, g6, h6 := b.squares[A6], b.squares[B6], b.squares[C6], b.squares[D6], b.squares[E6], b.squares[F6], b.squares[G6], b.squares[H6]
+	a7, b7, c7, d7, e7, f7, g7, h7 := b.squares[A7], b.squares[B7], b.squares[C7], b.squares[D7], b.squares[E7], b.squares[F7], b.squares[G7], b.squares[H7]
+	a8, b8, c8, d8, e8, f8, g8, h8 := b.squares[A8], b.squares[B8], b.squares[C8], b.squares[D8], b.squares[E8], b.squares[F8], b.squares[G8], b.squares[H8]
+
+	data := [][]string{
+		{"8", a8.String(), b8.String(), c8.String(), d8.String(), e8.String(), f8.String(), g8.String(), h8.String()},
+		{"7", a7.String(), b7.String(), c7.String(), d7.String(), e7.String(), f7.String(), g7.String(), h7.String()},
+		{"6", a6.String(), b6.String(), c6.String(), d6.String(), e6.String(), f6.String(), g6.String(), h6.String()},
+		{"5", a5.String(), b5.String(), c5.String(), d5.String(), e5.String(), f5.String(), g5.String(), h5.String()},
+		{"4", a4.String(), b4.String(), c4.String(), d4.String(), e4.String(), f4.String(), g4.String(), h4.String()},
+		{"3", a3.String(), b3.String(), c3.String(), d3.String(), e3.String(), f3.String(), g3.String(), h3.String()},
+		{"2", a2.String(), b2.String(), c2.String(), d2.String(), e2.String(), f2.String(), g2.String(), h2.String()},
+		{"1", a1.String(), b1.String(), c1.String(), d1.String(), e1.String(), f1.String(), g1.String(), h1.String()},
+		{"", "a", "b", "c", "d", "e", "f", "g", "h"},
+	}
+
+	table := tablewriter.NewWriter(&builder)
+
+	for _, v := range data {
+		table.Append(v)
+	}
+	table.Render() // Send output
+	return builder.String()
+}
+
 // Squares board squares, total of 8*8
 type Squares map[SquareIdentifier]Square
 
@@ -134,6 +174,13 @@ type Square struct {
 	Piece            Piece
 	Coordinates      Coordinate
 	SquareIdentifier SquareIdentifier
+}
+
+func (s *Square) String() string {
+	if s.Empty {
+		return ""
+	}
+	return s.Piece.String()
 }
 
 // MAXY maximum coordinate value

@@ -75,6 +75,20 @@ func (mr *MockBoardMockRecorder) Squares() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Squares", reflect.TypeOf((*MockBoard)(nil).Squares))
 }
 
+// String mocks base method.
+func (m *MockBoard) String() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "String")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// String indicates an expected call of String.
+func (mr *MockBoardMockRecorder) String() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockBoard)(nil).String))
+}
+
 // WhitePlayer mocks base method.
 func (m *MockBoard) WhitePlayer() *Player {
 	m.ctrl.T.Helper()

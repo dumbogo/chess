@@ -88,3 +88,17 @@ func (mr *MockPieceMockRecorder) PossibleMovements(board, from interface{}) *gom
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PossibleMovements", reflect.TypeOf((*MockPiece)(nil).PossibleMovements), board, from)
 }
+
+// String mocks base method.
+func (m *MockPiece) String() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "String")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// String indicates an expected call of String.
+func (mr *MockPieceMockRecorder) String() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "String", reflect.TypeOf((*MockPiece)(nil).String))
+}

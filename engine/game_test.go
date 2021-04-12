@@ -124,3 +124,21 @@ func TestBoard(t *testing.T) {
 	// TODO:WIP
 	t.Skip()
 }
+
+func TestGameString(t *testing.T) {
+	assert := assert.New(t)
+	testCaseGame, _ := testCaseGameGenerate()
+	r := testCaseGame.String()
+	assert.Equal(`+---+----+----+----+----+----+----+----+----+
+| 8 | AA | AA | AA | AA | AA | AA | AA | AA |
+| 7 | bp | bp | bp | bp | bp | bp | bp | bp |
+| 6 |    |    |    |    |    |    |    |    |
+| 5 |    |    |    |    |    |    |    |    |
+| 4 |    |    |    |    |    |    |    |    |
+| 3 |    |    |    |    |    |    |    |    |
+| 2 | wp | wp | wp | wp | wp | wp | wp | wp |
+| 1 | AA | AA | AA | AA | AA | AA | AA | AA |
+|   | a  | b  | c  | d  | e  | f  | g  | h  |
++---+----+----+----+----+----+----+----+----+
+`, r)
+}
