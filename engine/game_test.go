@@ -35,6 +35,22 @@ func TestNewGame(t *testing.T) {
 	assert.Equal(nil, err)
 }
 
+func TestLoadGame(t *testing.T) {
+	board := NewBoard(&testPlayerWhite, &testPlayerBlack)
+	blackPieces := map[PieceIdentifier]uint8{}
+	whitePieces := map[PieceIdentifier]uint8{}
+	LoadGame(
+		"wipgame",
+		board,
+		testPlayerWhite,
+		testPlayerWhite,
+		testPlayerBlack,
+		whitePieces,
+		blackPieces,
+		make([]Movement, 0),
+	)
+}
+
 func TestTurn(t *testing.T) {
 	assert := assert.New(t)
 	testCaseGame, _ := testCaseGameGenerate()

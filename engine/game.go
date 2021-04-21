@@ -38,6 +38,9 @@ type Game interface {
 	Movements() []Movement
 
 	String() string
+
+	WhitePieces() map[PieceIdentifier]uint8
+	BlackPieces() map[PieceIdentifier]uint8
 }
 
 type game struct {
@@ -84,8 +87,39 @@ func NewGame(name string, black, white Player) (Game, error) {
 		whitePieces: whitePieces,
 	}, nil
 }
+
+// LoadGame loads in game being played
+func LoadGame(
+	name string,
+	board Board,
+	turn Player,
+	white, black Player,
+	whitePieces map[PieceIdentifier]uint8,
+	blackPieces map[PieceIdentifier]uint8,
+	movements []Movement,
+) (Game, error) {
+	return &game{
+		name:        name,
+		board:       board,
+		turn:        turn,
+		white:       white,
+		black:       black,
+		whitePieces: whitePieces,
+		blackPieces: blackPieces,
+		movements:   movements,
+	}, nil
+}
+
 func (g *game) Turn() Player {
 	return g.turn
+}
+
+func (g *game) WhitePieces() map[PieceIdentifier]uint8 {
+	return g.whitePieces
+}
+
+func (g *game) BlackPieces() map[PieceIdentifier]uint8 {
+	return g.blackPieces
 }
 
 func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
