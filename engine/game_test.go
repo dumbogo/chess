@@ -100,7 +100,7 @@ func TestMove(t *testing.T) {
 	}
 	p1.
 		EXPECT().
-		CanMove(testCaseGame.Board(), square1, square2).
+		CanMove(testCaseGame.Board(), testCaseGame.Movements(), square1, square2).
 		Return(true)
 
 	testCaseGame.Board().Squares()[H4] = square1

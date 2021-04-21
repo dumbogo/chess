@@ -23,6 +23,7 @@ func TestPawnCanMove(t *testing.T) {
 	pawn := NewPawn(BlackColor)
 
 	// when first movement, advance two spaces
+	movements := []Movement{}
 	square1 := Square{
 		Empty:            false,
 		Coordinates:      Coordinate{5, 1, F2},
@@ -39,9 +40,10 @@ func TestPawnCanMove(t *testing.T) {
 		EXPECT().
 		Squares().
 		Return(Squares{F2: square1, F4: square2})
-	assert.True(pawn.CanMove(board, square1, square2))
+	assert.True(pawn.CanMove(board, movements, square1, square2))
 
 	// when moving to empty
+	movements = []Movement{}
 	square1 = Square{
 		Empty:            false,
 		Piece:            pawn,
@@ -59,7 +61,7 @@ func TestPawnCanMove(t *testing.T) {
 		Squares().
 		Return(Squares{D3: square1, B5: square2})
 
-	ok := pawn.CanMove(board, square1, square2)
+	ok := pawn.CanMove(board, movements, square1, square2)
 	assert.True(ok)
 
 	// TODO: WIP

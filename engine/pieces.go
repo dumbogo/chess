@@ -12,8 +12,7 @@ type Piece interface {
 	Color() Color
 	// CanMove check if piece can be moved from, to Square,
 	// returns true if it's possible
-	CanMove(board Board, from, to Square) bool
-	PossibleMovements(board Board, from Square) []Square
+	CanMove(board Board, movements []Movement, from, to Square) bool
 
 	String() string
 }
@@ -36,11 +35,7 @@ func (p *piece) String() string {
 	return "AA"
 }
 
-func (p *piece) CanMove(b Board, from, to Square) bool {
-	panic(errors.New("Must implement interface method"))
-}
-
-func (p *piece) PossibleMovements(Board, Square) []Square {
+func (p *piece) CanMove(b Board, m []Movement, from, to Square) bool {
 	panic(errors.New("Must implement interface method"))
 }
 
@@ -135,13 +130,7 @@ func NewKing(color Color) Piece {
 }
 
 // TODO: WIP
-func (p *pawn) CanMove(board Board, from, to Square) bool {
-	// check if first movement by color
-	if from.Piece.Color() == BlackColor {
-		if from.Coordinates.Y == 6 {
-			// Here, I know It's the first movement
-		}
-	}
+func (p *pawn) CanMove(board Board, movements []Movement, from, to Square) bool {
 	return true
 }
 
