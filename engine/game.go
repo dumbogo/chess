@@ -133,6 +133,7 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 	if pieceToMove.Color() != g.Turn().Color {
 		return false, nil
 	}
+
 	canMove := squareFrom.Piece.CanMove(g.board, g.Movements(), squareFrom, squareTo)
 	if !canMove {
 		return false, nil

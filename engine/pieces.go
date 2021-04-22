@@ -11,7 +11,7 @@ type Piece interface {
 	// Color piece color
 	Color() Color
 	// CanMove check if piece can be moved from, to Square,
-	// returns true if it's possible
+	// returns true if it's possible, even if a piece can be eaten
 	CanMove(board Board, movements []Movement, from, to Square) bool
 
 	String() string
@@ -129,9 +129,64 @@ func NewKing(color Color) Piece {
 	}
 }
 
-// TODO: WIP
+// TODO: PawnCanMove
+// En passant
+// Handle when reachs Coordinates limits
 func (p *pawn) CanMove(board Board, movements []Movement, from, to Square) bool {
-	return true
+	if from.Empty {
+		return false
+	}
+
+	if from.Piece.Color() == WhiteColor {
+		// First movement , not eating
+		if from.Coordinates.Y == 1 &&
+			from.Coordinates.X == to.Coordinates.X &&
+			to.Coordinates.Y >= from.Coordinates.Y+2 &&
+			to.Empty {
+			// BUG : when there's a piece in position X+1 and pawn moves two spaces, it returns true
+			return true
+		}
+
+		// Simple movement, advance one
+		if to.Empty &&
+			from.Coordinates.Y+1 == to.Coordinates.Y &&
+			from.Coordinates.X == to.Coordinates.X {
+			return true
+		}
+
+		// Eating piece
+		if from.Coordinates.Y+1 == to.Coordinates.Y &&
+			(from.Coordinates.X-1 == to.Coordinates.X || from.Coordinates.X+1 == to.Coordinates.X) &&
+			!to.Empty &&
+			to.Piece.Color() != from.Piece.Color() {
+			return true
+		}
+	} else if from.Piece.Color() == BlackColor {
+		// First movement , not eating
+		if from.Coordinates.Y == 6 &&
+			from.Coordinates.X == to.Coordinates.X &&
+			to.Coordinates.Y >= from.Coordinates.Y-2 &&
+			to.Empty {
+			// BUG : when there's a piece in position X-1 and pawn moves two spaces, it returns true
+			return true
+		}
+
+		// Simple movement, advance one
+		if to.Empty &&
+			from.Coordinates.Y-1 == to.Coordinates.Y &&
+			from.Coordinates.X == to.Coordinates.X {
+			return true
+		}
+
+		// Eating piece
+		if from.Coordinates.Y-1 == to.Coordinates.Y &&
+			(from.Coordinates.X-1 == to.Coordinates.X || from.Coordinates.X+1 == to.Coordinates.X) &&
+			!to.Empty &&
+			to.Piece.Color() != from.Piece.Color() {
+			return true
+		}
+	}
+	return false
 }
 
 func (p *pawn) String() string {

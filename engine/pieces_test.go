@@ -15,59 +15,111 @@ func TestNewPawn(t *testing.T) {
 }
 
 func TestPawnCanMove(t *testing.T) {
-	t.Skip()
 	assert := assert.New(t)
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
 
-	pawn := NewPawn(BlackColor)
-
+	// White movements validations
+	whitePawn := NewPawn(WhiteColor)
+	blackPawn := NewPawn(BlackColor)
 	// when first movement, advance two spaces
 	movements := []Movement{}
 	square1 := Square{
 		Empty:            false,
-		Coordinates:      Coordinate{5, 1, F2},
-		SquareIdentifier: F2,
-		Piece:            pawn,
+		Coordinates:      Coordinate{0, 1, A2},
+		SquareIdentifier: A2,
+		Piece:            whitePawn,
 	}
 	square2 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{5, 3, F4},
-		SquareIdentifier: F4,
+		Coordinates:      Coordinate{0, 3, A4},
+		SquareIdentifier: A4,
 	}
 	board := NewMockBoard(ctrl)
-	board.
-		EXPECT().
-		Squares().
-		Return(Squares{F2: square1, F4: square2})
-	assert.True(pawn.CanMove(board, movements, square1, square2))
+	assert.True(whitePawn.CanMove(board, movements, square1, square2))
 
 	// when moving to empty
 	movements = []Movement{}
 	square1 = Square{
 		Empty:            false,
-		Piece:            pawn,
-		Coordinates:      Coordinate{1, 3, D3},
-		SquareIdentifier: D3,
+		Piece:            whitePawn,
+		Coordinates:      Coordinate{3, 3, D4},
+		SquareIdentifier: D4,
 	}
 	square2 = Square{
 		Empty:            true,
-		Coordinates:      Coordinate{1, 4, B5},
-		SquareIdentifier: B5,
+		Coordinates:      Coordinate{3, 4, D5},
+		SquareIdentifier: D5,
 	}
 	board = NewMockBoard(ctrl)
-	board.
-		EXPECT().
-		Squares().
-		Return(Squares{D3: square1, B5: square2})
+	assert.True(whitePawn.CanMove(board, movements, square1, square2))
 
-	ok := pawn.CanMove(board, movements, square1, square2)
-	assert.True(ok)
-
-	// TODO: WIP
-	// En passant
 	// Eating a piece
-	// Illegal movement: blocked by other piece
+	movements = []Movement{}
+	square1 = Square{
+		Empty:            false,
+		Piece:            whitePawn,
+		Coordinates:      Coordinate{3, 3, D4},
+		SquareIdentifier: D4,
+	}
+	square2 = Square{
+		Empty:            false,
+		Piece:            blackPawn,
+		Coordinates:      Coordinate{4, 4, E5},
+		SquareIdentifier: E5,
+	}
+	board = NewMockBoard(ctrl)
+	assert.True(whitePawn.CanMove(board, movements, square1, square2))
+
+	// Black movements
+	// when first movement, advance two spaces
+	movements = []Movement{}
+	square1 = Square{
+		Empty:            false,
+		Coordinates:      Coordinate{5, 6, F7},
+		SquareIdentifier: F7,
+		Piece:            blackPawn,
+	}
+	square2 = Square{
+		Empty:            true,
+		Coordinates:      Coordinate{5, 4, F5},
+		SquareIdentifier: F5,
+	}
+	board = NewMockBoard(ctrl)
+	assert.True(blackPawn.CanMove(board, movements, square1, square2))
+
+	// when moving to empty
+	movements = []Movement{}
+	square1 = Square{
+		Empty:            false,
+		Piece:            blackPawn,
+		Coordinates:      Coordinate{3, 3, D4},
+		SquareIdentifier: D4,
+	}
+	square2 = Square{
+		Empty:            true,
+		Coordinates:      Coordinate{3, 2, D3},
+		SquareIdentifier: D3,
+	}
+	board = NewMockBoard(ctrl)
+	assert.True(whitePawn.CanMove(board, movements, square1, square2))
+
+	// Eating a piece
+	movements = []Movement{}
+	square1 = Square{
+		Empty:            false,
+		Piece:            blackPawn,
+		Coordinates:      Coordinate{3, 3, D4},
+		SquareIdentifier: D4,
+	}
+	square2 = Square{
+		Empty:            false,
+		Piece:            whitePawn,
+		Coordinates:      Coordinate{2, 2, C3},
+		SquareIdentifier: C3,
+	}
+	board = NewMockBoard(ctrl)
+	assert.True(whitePawn.CanMove(board, movements, square1, square2))
 }
 
 // TODO: add tests CanMove interface method for each piece
