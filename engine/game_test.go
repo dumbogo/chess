@@ -145,16 +145,17 @@ func TestGameString(t *testing.T) {
 	assert := assert.New(t)
 	testCaseGame, _ := testCaseGameGenerate()
 	r := testCaseGame.String()
-	assert.Equal(`+---+----+----+----+----+----+----+----+----+
-| 8 | AA | AA | AA | AA | AA | AA | AA | AA |
-| 7 | bp | bp | bp | bp | bp | bp | bp | bp |
+	expected := `+---+----+----+----+----+----+----+----+----+
+| 8 | BR | Bk | BB | BQ | BK | BB | Bk | BR |
+| 7 | BP | BP | BP | BP | BP | BP | BP | BP |
 | 6 |    |    |    |    |    |    |    |    |
 | 5 |    |    |    |    |    |    |    |    |
 | 4 |    |    |    |    |    |    |    |    |
 | 3 |    |    |    |    |    |    |    |    |
-| 2 | wp | wp | wp | wp | wp | wp | wp | wp |
-| 1 | AA | AA | AA | AA | AA | AA | AA | AA |
+| 2 | WP | WP | WP | WP | WP | WP | WP | WP |
+| 1 | WR | Wk | WB | WQ | WK | WB | Wk | WR |
 |   | a  | b  | c  | d  | e  | f  | g  | h  |
 +---+----+----+----+----+----+----+----+----+
-`, r)
+`
+	assert.Equal(expected, r)
 }

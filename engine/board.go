@@ -195,3 +195,8 @@ type Coordinate struct {
 	Y                uint8
 	SquareIdentifier SquareIdentifier
 }
+
+// CoordinateToSquareIdentifier returns equivalent value from Coordinate to Square Identifier
+func CoordinateToSquareIdentifier(c Coordinate) SquareIdentifier {
+	return SquareIdentifier(c.Y*8 + c.X + 1)
+}
