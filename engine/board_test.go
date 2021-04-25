@@ -73,8 +73,8 @@ func TestEatPiece(t *testing.T) {
 
 func TestCoordinateToSquareIdentifier(t *testing.T) {
 	assert := assert.New(t)
-	assert.Equal(A1, CoordinateToSquareIdentifier(Coordinate{0, 0, 0}))
-	assert.Equal(H2, CoordinateToSquareIdentifier(Coordinate{7, 1, 0}))
-	assert.Equal(H6, CoordinateToSquareIdentifier(Coordinate{7, 5, 0}))
-	assert.Equal(H8, CoordinateToSquareIdentifier(Coordinate{7, 7, 0}))
+	assert.Equal(A1, CoordinateToSquareIdentifier(Coordinate{0, 0}))
+	assert.Equal(H2, CoordinateToSquareIdentifier(Coordinate{7, 1}))
+	assert.Equal(H6, CoordinateToSquareIdentifier(Coordinate{7, 5}))
+	assert.Equal(H8, CoordinateToSquareIdentifier(Coordinate{7, 7}))
 }

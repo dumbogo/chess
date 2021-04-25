@@ -26,13 +26,13 @@ func TestPawnCanMove(t *testing.T) {
 	movements := []Movement{}
 	square1 := Square{
 		Empty:            false,
-		Coordinates:      Coordinate{0, 1, A2},
+		Coordinates:      Coordinate{0, 1},
 		SquareIdentifier: A2,
 		Piece:            whitePawn,
 	}
 	square2 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{0, 3, A4},
+		Coordinates:      Coordinate{0, 3},
 		SquareIdentifier: A4,
 	}
 	board := NewMockBoard(ctrl)
@@ -43,12 +43,12 @@ func TestPawnCanMove(t *testing.T) {
 	square1 = Square{
 		Empty:            false,
 		Piece:            whitePawn,
-		Coordinates:      Coordinate{3, 3, D4},
+		Coordinates:      Coordinate{3, 3},
 		SquareIdentifier: D4,
 	}
 	square2 = Square{
 		Empty:            true,
-		Coordinates:      Coordinate{3, 4, D5},
+		Coordinates:      Coordinate{3, 4},
 		SquareIdentifier: D5,
 	}
 	board = NewMockBoard(ctrl)
@@ -59,13 +59,13 @@ func TestPawnCanMove(t *testing.T) {
 	square1 = Square{
 		Empty:            false,
 		Piece:            whitePawn,
-		Coordinates:      Coordinate{3, 3, D4},
+		Coordinates:      Coordinate{3, 3},
 		SquareIdentifier: D4,
 	}
 	square2 = Square{
 		Empty:            false,
 		Piece:            blackPawn,
-		Coordinates:      Coordinate{4, 4, E5},
+		Coordinates:      Coordinate{4, 4},
 		SquareIdentifier: E5,
 	}
 	board = NewMockBoard(ctrl)
@@ -76,13 +76,13 @@ func TestPawnCanMove(t *testing.T) {
 	movements = []Movement{}
 	square1 = Square{
 		Empty:            false,
-		Coordinates:      Coordinate{5, 6, F7},
+		Coordinates:      Coordinate{5, 6},
 		SquareIdentifier: F7,
 		Piece:            blackPawn,
 	}
 	square2 = Square{
 		Empty:            true,
-		Coordinates:      Coordinate{5, 4, F5},
+		Coordinates:      Coordinate{5, 4},
 		SquareIdentifier: F5,
 	}
 	board = NewMockBoard(ctrl)
@@ -93,12 +93,12 @@ func TestPawnCanMove(t *testing.T) {
 	square1 = Square{
 		Empty:            false,
 		Piece:            blackPawn,
-		Coordinates:      Coordinate{3, 3, D4},
+		Coordinates:      Coordinate{3, 3},
 		SquareIdentifier: D4,
 	}
 	square2 = Square{
 		Empty:            true,
-		Coordinates:      Coordinate{3, 2, D3},
+		Coordinates:      Coordinate{3, 2},
 		SquareIdentifier: D3,
 	}
 	board = NewMockBoard(ctrl)
@@ -109,13 +109,13 @@ func TestPawnCanMove(t *testing.T) {
 	square1 = Square{
 		Empty:            false,
 		Piece:            blackPawn,
-		Coordinates:      Coordinate{3, 3, D4},
+		Coordinates:      Coordinate{3, 3},
 		SquareIdentifier: D4,
 	}
 	square2 = Square{
 		Empty:            false,
 		Piece:            whitePawn,
-		Coordinates:      Coordinate{2, 2, C3},
+		Coordinates:      Coordinate{2, 2},
 		SquareIdentifier: C3,
 	}
 	board = NewMockBoard(ctrl)
@@ -141,18 +141,18 @@ func TestKingCanMove(t *testing.T) {
 
 	a1 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{0, 0, A1},
+		Coordinates:      Coordinate{0, 0},
 		SquareIdentifier: A1,
 	}
 	b2 := Square{
 		Empty:            false,
 		Piece:            whiteKing,
-		Coordinates:      Coordinate{1, 1, B2},
+		Coordinates:      Coordinate{1, 1},
 		SquareIdentifier: B2,
 	}
 	c3 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{2, 2, C3},
+		Coordinates:      Coordinate{2, 2},
 		SquareIdentifier: C3,
 	}
 
@@ -162,7 +162,7 @@ func TestKingCanMove(t *testing.T) {
 	d4 := Square{
 		Empty:            false,
 		Piece:            mockBlackPieceD4,
-		Coordinates:      Coordinate{3, 3, D4},
+		Coordinates:      Coordinate{3, 3},
 		SquareIdentifier: D4,
 	}
 
@@ -235,23 +235,23 @@ func TestRookCanMove(t *testing.T) {
 
 	d4 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{3, 3, D4},
+		Coordinates:      Coordinate{3, 3},
 		SquareIdentifier: D4,
 	}
 	d5 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{3, 4, D5},
+		Coordinates:      Coordinate{3, 4},
 		SquareIdentifier: D5,
 	}
 	d6 := Square{
 		Empty:            false,
-		Coordinates:      Coordinate{3, 5, D6},
+		Coordinates:      Coordinate{3, 5},
 		SquareIdentifier: D6,
 	}
 	d7 := Square{
 		Empty:            false,
 		Piece:            whiteRook,
-		Coordinates:      Coordinate{3, 6, D7},
+		Coordinates:      Coordinate{3, 6},
 		SquareIdentifier: D7,
 	}
 
@@ -278,23 +278,23 @@ func TestRookCanMove(t *testing.T) {
 	d4 = Square{
 		Empty:            false,
 		Piece:            whiteRook,
-		Coordinates:      Coordinate{3, 3, D4},
+		Coordinates:      Coordinate{3, 3},
 		SquareIdentifier: D4,
 	}
 	d5 = Square{
 		Empty:            true,
-		Coordinates:      Coordinate{3, 4, D5},
+		Coordinates:      Coordinate{3, 4},
 		SquareIdentifier: D5,
 	}
 	d6 = Square{
 		Empty:            true,
-		Coordinates:      Coordinate{3, 5, D6},
+		Coordinates:      Coordinate{3, 5},
 		SquareIdentifier: D6,
 	}
 	d7 = Square{
 		Empty:            false,
 		Piece:            blackPiece,
-		Coordinates:      Coordinate{3, 6, D7},
+		Coordinates:      Coordinate{3, 6},
 		SquareIdentifier: D7,
 	}
 	squares = map[SquareIdentifier]Square{
@@ -317,23 +317,23 @@ func TestRookCanMove(t *testing.T) {
 	// Case: move on X axis,
 	a1 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{0, 0, A1},
+		Coordinates:      Coordinate{0, 0},
 		SquareIdentifier: A1,
 	}
 	b1 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{1, 0, B1},
+		Coordinates:      Coordinate{1, 0},
 		SquareIdentifier: B1,
 	}
 	c1 := Square{
 		Empty:            true,
-		Coordinates:      Coordinate{1, 0, C1},
+		Coordinates:      Coordinate{1, 0},
 		SquareIdentifier: C1,
 	}
 	d1 := Square{
 		Empty:            false,
 		Piece:            whiteRook,
-		Coordinates:      Coordinate{1, 0, C1},
+		Coordinates:      Coordinate{1, 0},
 		SquareIdentifier: C1,
 	}
 
