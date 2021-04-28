@@ -91,8 +91,15 @@ func NewQueen(color Color) Piece {
 	}
 }
 
-func (q *queen) CanMove(b Board, m []Movement, from, to Square) bool { // TODO: CanMove queen
-	panic("TODO: ENDTHIS")
+func (q *queen) CanMove(b Board, m []Movement, from, to Square) bool {
+	if from.Empty {
+		return false
+	}
+	squares := b.Squares()
+	if validRookMovement(squares, from, to) || validBishopMovement(squares, from, to) {
+		return true
+	}
+	return false
 }
 
 func (q *queen) String() string {
@@ -117,11 +124,7 @@ func NewRook(color Color) Piece {
 	}
 }
 
-func (r *rook) CanMove(b Board, m []Movement, from, to Square) bool {
-	if from.Empty {
-		return false
-	}
-	squares := b.Squares()
+func validRookMovement(squares Squares, from, to Square) bool {
 	if from.Coordinates.X == to.Coordinates.X &&
 		from.Coordinates.Y != to.Coordinates.Y {
 
@@ -162,6 +165,13 @@ func (r *rook) CanMove(b Board, m []Movement, from, to Square) bool {
 	}
 	return false
 }
+func (r *rook) CanMove(b Board, m []Movement, from, to Square) bool {
+	if from.Empty {
+		return false
+	}
+	squares := b.Squares()
+	return validRookMovement(squares, from, to)
+}
 
 func (r *rook) String() string {
 	if r.Color() == WhiteColor {
@@ -185,12 +195,7 @@ func NewBishop(color Color) Piece {
 	}
 }
 
-func (bi *bishop) CanMove(b Board, m []Movement, from, to Square) bool {
-	//ENHANCEMENT: We can refactor and use Slope(https://en.wikipedia.org/wiki/Slope) instead
-	if from.Empty {
-		return false
-	}
-	squares := b.Squares()
+func validBishopMovement(squares Squares, from, to Square) bool {
 	if math.Abs(float64(from.Coordinates.X-to.Coordinates.X)) != math.Abs(float64(from.Coordinates.Y-to.Coordinates.Y)) {
 		return false
 	}
@@ -215,6 +220,15 @@ func (bi *bishop) CanMove(b Board, m []Movement, from, to Square) bool {
 		return false
 	}
 	return true
+
+}
+func (bi *bishop) CanMove(b Board, m []Movement, from, to Square) bool {
+	//ENHANCEMENT: We can refactor and use Slope(https://en.wikipedia.org/wiki/Slope) instead
+	if from.Empty {
+		return false
+	}
+	squares := b.Squares()
+	return validBishopMovement(squares, from, to)
 }
 
 func (bi *bishop) String() string {

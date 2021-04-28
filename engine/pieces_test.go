@@ -98,8 +98,69 @@ func TestNewQueen(t *testing.T) {
 	assert.Equal(BlackColor, p.Color())
 }
 
-func TestQueenCanMove(t *testing.T) { // TODO: End testcase TestQueenCanMove
-	t.Skip()
+func TestQueenCanMove(t *testing.T) {
+	assert := assert.New(t)
+	p := NewQueen(BlackColor)
+	movements := []Movement{}
+	ctrlMockBoard := gomock.NewController(t)
+	defer ctrlMockBoard.Finish()
+	mockBoard := NewMockBoard(ctrlMockBoard)
+
+	// Case: Moves like Rook
+	a1 := Square{
+		Empty:            true,
+		Coordinates:      Coordinate{0, 0},
+		SquareIdentifier: A1,
+	}
+	b1 := Square{
+		Empty:            true,
+		Coordinates:      Coordinate{1, 0},
+		SquareIdentifier: B1,
+	}
+	c1 := Square{
+		Empty:            true,
+		Coordinates:      Coordinate{1, 0},
+		SquareIdentifier: C1,
+	}
+	d1 := Square{
+		Empty:            false,
+		Piece:            p,
+		Coordinates:      Coordinate{1, 0},
+		SquareIdentifier: C1,
+	}
+
+	squares := map[SquareIdentifier]Square{
+		A1: a1,
+		B1: b1,
+		C1: c1,
+		D1: d1,
+	}
+	mockBoard.
+		EXPECT().
+		Squares().
+		Return(squares)
+	assert.True(p.CanMove(mockBoard, movements, d1, a1))
+
+	// Case: Moves like Bishop
+	ctrlMockBoard = gomock.NewController(t)
+	defer ctrlMockBoard.Finish()
+	mockBoard = NewMockBoard(ctrlMockBoard)
+
+	a1 = Square{Empty: true, Coordinates: Coordinate{0, 0}, SquareIdentifier: A1}
+	b2 := Square{Empty: true, Coordinates: Coordinate{1, 1}, SquareIdentifier: B2}
+	c3 := Square{Empty: false, Coordinates: Coordinate{2, 2}, SquareIdentifier: C3, Piece: p}
+
+	squares = Squares{
+		A1: a1,
+		B2: b2,
+		C3: c3,
+	}
+
+	mockBoard.
+		EXPECT().
+		Squares().
+		Return(squares)
+	assert.True(p.CanMove(mockBoard, movements, c3, a1))
 }
 
 func TestNewRook(t *testing.T) {
