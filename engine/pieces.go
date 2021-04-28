@@ -1,5 +1,7 @@
 package engine
 
+import "math"
+
 // Piece piece type
 type Piece interface {
 	// Name Piece name
@@ -25,89 +27,6 @@ func (p *piece) Identifier() PieceIdentifier {
 
 func (p *piece) Color() Color {
 	return p.color
-}
-
-type pawn struct {
-	piece
-}
-
-// NewPawn creates Pawn piece
-func NewPawn(color Color) Piece {
-	p := piece{
-		pieceIdentifier: PawnIdentifier,
-		color:           color,
-	}
-	return &pawn{
-		piece: p,
-	}
-}
-
-// TODO: PawnCanMove [En passant , Handle when reachs Coordinates limits]
-func (p *pawn) CanMove(board Board, movements []Movement, from, to Square) bool {
-	if from.Empty {
-		return false
-	}
-	if from.Piece.Identifier() != PawnIdentifier {
-		return false
-	}
-
-	if from.Piece.Color() == WhiteColor {
-		// First movement , not eating
-		if from.Coordinates.Y == 1 &&
-			from.Coordinates.X == to.Coordinates.X &&
-			to.Coordinates.Y >= from.Coordinates.Y+2 &&
-			to.Empty {
-			// BUG : when there's a piece in position X+1 and pawn moves two spaces, it returns true
-			return true
-		}
-
-		// Simple movement, advance one
-		if to.Empty &&
-			from.Coordinates.Y+1 == to.Coordinates.Y &&
-			from.Coordinates.X == to.Coordinates.X {
-			return true
-		}
-
-		// Eating piece
-		if from.Coordinates.Y+1 == to.Coordinates.Y &&
-			(from.Coordinates.X-1 == to.Coordinates.X || from.Coordinates.X+1 == to.Coordinates.X) &&
-			!to.Empty &&
-			to.Piece.Color() != from.Piece.Color() {
-			return true
-		}
-	} else if from.Piece.Color() == BlackColor {
-		// First movement , not eating
-		if from.Coordinates.Y == 6 &&
-			from.Coordinates.X == to.Coordinates.X &&
-			to.Coordinates.Y >= from.Coordinates.Y-2 &&
-			to.Empty {
-			// BUG : when there's a piece in position X-1 and pawn moves two spaces, it returns true
-			return true
-		}
-
-		// Simple movement, advance one
-		if to.Empty &&
-			from.Coordinates.Y-1 == to.Coordinates.Y &&
-			from.Coordinates.X == to.Coordinates.X {
-			return true
-		}
-
-		// Eating piece
-		if from.Coordinates.Y-1 == to.Coordinates.Y &&
-			(from.Coordinates.X-1 == to.Coordinates.X || from.Coordinates.X+1 == to.Coordinates.X) &&
-			!to.Empty &&
-			to.Piece.Color() != from.Piece.Color() {
-			return true
-		}
-	}
-	return false
-}
-
-func (p *pawn) String() string {
-	if p.Color() == WhiteColor {
-		return "WP"
-	}
-	return "BP"
 }
 
 type king struct {
@@ -172,8 +91,7 @@ func NewQueen(color Color) Piece {
 	}
 }
 
-func (q *queen) CanMove(b Board, m []Movement, from, to Square) bool {
-	// TODO: CanMove queen
+func (q *queen) CanMove(b Board, m []Movement, from, to Square) bool { // TODO: CanMove queen
 	panic("TODO: ENDTHIS")
 }
 
@@ -268,8 +186,35 @@ func NewBishop(color Color) Piece {
 }
 
 func (bi *bishop) CanMove(b Board, m []Movement, from, to Square) bool {
-	// TODO: CanMove bishop
-	panic("TODO: ENDTHIS")
+	//ENHANCEMENT: We can refactor and use Slope(https://en.wikipedia.org/wiki/Slope) instead
+	if from.Empty {
+		return false
+	}
+	squares := b.Squares()
+	if math.Abs(float64(from.Coordinates.X-to.Coordinates.X)) != math.Abs(float64(from.Coordinates.Y-to.Coordinates.Y)) {
+		return false
+	}
+	sumX := 1
+	sumY := 1
+	if from.Coordinates.X > to.Coordinates.X {
+		sumX = -1
+	}
+	if from.Coordinates.Y > to.Coordinates.Y {
+		sumY = -1
+	}
+
+	for itX, itY := int(from.Coordinates.X)+sumX, int(from.Coordinates.Y)+sumY; uint8(itX) != to.Coordinates.X && uint8(itY) != to.Coordinates.Y; {
+		square := squares[CoordinateToSquareIdentifier(Coordinate{uint8(itX), uint8(itY)})]
+		if !square.Empty {
+			return false
+		}
+		itX += sumX
+		itY += sumY
+	}
+	if !to.Empty && to.Piece.Color() == from.Piece.Color() {
+		return false
+	}
+	return true
 }
 
 func (bi *bishop) String() string {
@@ -295,8 +240,36 @@ func NewKnight(color Color) Piece {
 }
 
 func (k *knight) CanMove(b Board, m []Movement, from, to Square) bool {
-	// TODO: CanMove knight
-	panic("TODO: ENDTHIS")
+	if from.Empty {
+		return false
+	}
+	if from.Piece.Identifier() != KnightIdentifier {
+		return false
+	}
+	if !to.Empty && to.Piece.Color() == from.Piece.Color() {
+		return false
+	}
+	// ENHANCEMENT: We can use slope, and length of vertex instead in order to recognize valid movements
+	// Doing nasty if statements
+	switch to.Coordinates.X {
+	case from.Coordinates.X - 1:
+		if to.Coordinates.Y == from.Coordinates.Y+2 || to.Coordinates.Y == from.Coordinates.Y-2 {
+			return true
+		}
+	case from.Coordinates.X + 1:
+		if to.Coordinates.Y == from.Coordinates.Y+2 || to.Coordinates.Y == from.Coordinates.Y-2 {
+			return true
+		}
+	case from.Coordinates.X + 2:
+		if to.Coordinates.Y == from.Coordinates.Y-1 || to.Coordinates.Y == from.Coordinates.Y+1 {
+			return true
+		}
+	case from.Coordinates.X - 2:
+		if to.Coordinates.Y == from.Coordinates.Y-1 || to.Coordinates.Y == from.Coordinates.Y+1 {
+			return true
+		}
+	}
+	return false
 }
 
 func (k *knight) String() string {
@@ -304,4 +277,87 @@ func (k *knight) String() string {
 		return "Wk"
 	}
 	return "Bk"
+}
+
+type pawn struct {
+	piece
+}
+
+// NewPawn creates Pawn piece
+func NewPawn(color Color) Piece {
+	p := piece{
+		pieceIdentifier: PawnIdentifier,
+		color:           color,
+	}
+	return &pawn{
+		piece: p,
+	}
+}
+
+// TODO: PawnCanMove [En passant , Handle when reachs Coordinates limits]
+func (p *pawn) CanMove(board Board, movements []Movement, from, to Square) bool {
+	if from.Empty {
+		return false
+	}
+	if from.Piece.Identifier() != PawnIdentifier {
+		return false
+	}
+
+	if from.Piece.Color() == WhiteColor {
+		// First movement , not eating
+		if from.Coordinates.Y == 1 &&
+			from.Coordinates.X == to.Coordinates.X &&
+			to.Coordinates.Y >= from.Coordinates.Y+2 &&
+			to.Empty {
+			// BUG : when there's a piece in position X+1 and pawn moves two spaces, it returns true
+			return true
+		}
+
+		// Simple movement, advance one
+		if to.Empty &&
+			from.Coordinates.Y+1 == to.Coordinates.Y &&
+			from.Coordinates.X == to.Coordinates.X {
+			return true
+		}
+
+		// Eating piece
+		if from.Coordinates.Y+1 == to.Coordinates.Y &&
+			(from.Coordinates.X-1 == to.Coordinates.X || from.Coordinates.X+1 == to.Coordinates.X) &&
+			!to.Empty &&
+			to.Piece.Color() != from.Piece.Color() {
+			return true
+		}
+	} else if from.Piece.Color() == BlackColor {
+		// First movement , not eating
+		if from.Coordinates.Y == 6 &&
+			from.Coordinates.X == to.Coordinates.X &&
+			to.Coordinates.Y >= from.Coordinates.Y-2 &&
+			to.Empty {
+			// BUG : when there's a piece in position X-1 and pawn moves two spaces, it returns true
+			return true
+		}
+
+		// Simple movement, advance one
+		if to.Empty &&
+			from.Coordinates.Y-1 == to.Coordinates.Y &&
+			from.Coordinates.X == to.Coordinates.X {
+			return true
+		}
+
+		// Eating piece
+		if from.Coordinates.Y-1 == to.Coordinates.Y &&
+			(from.Coordinates.X-1 == to.Coordinates.X || from.Coordinates.X+1 == to.Coordinates.X) &&
+			!to.Empty &&
+			to.Piece.Color() != from.Piece.Color() {
+			return true
+		}
+	}
+	return false
+}
+
+func (p *pawn) String() string {
+	if p.Color() == WhiteColor {
+		return "WP"
+	}
+	return "BP"
 }
