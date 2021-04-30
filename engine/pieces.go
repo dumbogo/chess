@@ -1,6 +1,8 @@
 package engine
 
-import "math"
+import (
+	"math"
+)
 
 // Piece piece type
 type Piece interface {
@@ -44,6 +46,18 @@ func NewKing(color Color) Piece {
 	}
 }
 
+func kingEatableInSquare(color Color, b Board, m []Movement, to Square) bool {
+	// Loop to find if any piece can eat king in TO Square
+	for _, square := range b.Squares() {
+		if !square.Empty && square.Piece.Color() != color {
+			if square.Piece.CanMove(b, m, square, to) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func (k *king) CanMove(b Board, m []Movement, from, to Square) bool {
 	if from.Empty {
 		return false
@@ -52,21 +66,17 @@ func (k *king) CanMove(b Board, m []Movement, from, to Square) bool {
 		return false
 	}
 
-	for _, square := range b.Squares() {
-		if !square.Empty && square.Piece.Color() != k.Color() {
-			if square.Piece.CanMove(b, m, square, to) {
-				return false
-			}
-		}
-	}
-
-	if (to.Coordinates.X == from.Coordinates.X+1 || to.Coordinates.X == from.Coordinates.X-1) &&
+	if !((to.Coordinates.X == from.Coordinates.X+1 || to.Coordinates.X == from.Coordinates.X-1) &&
 		(to.Coordinates.Y == from.Coordinates.Y+1 || to.Coordinates.Y == from.Coordinates.Y-1) &&
-		(to.Empty || !to.Empty && to.Piece.Color() != from.Piece.Color()) {
-		return true
+		(to.Empty || !to.Empty && to.Piece.Color() != from.Piece.Color())) {
+		return false
 	}
 
-	return false
+	if kingEatableInSquare(k.Color(), b, m, to) {
+		return false
+	}
+
+	return true
 }
 
 func (k *king) String() string {
@@ -196,7 +206,7 @@ func NewBishop(color Color) Piece {
 }
 
 func validBishopMovement(squares Squares, from, to Square) bool {
-	if math.Abs(float64(from.Coordinates.X-to.Coordinates.X)) != math.Abs(float64(from.Coordinates.Y-to.Coordinates.Y)) {
+	if math.Abs(float64(from.Coordinates.X)-float64(to.Coordinates.X)) != math.Abs(float64(from.Coordinates.Y)-float64(to.Coordinates.Y)) {
 		return false
 	}
 	sumX := 1
@@ -210,6 +220,7 @@ func validBishopMovement(squares Squares, from, to Square) bool {
 
 	for itX, itY := int(from.Coordinates.X)+sumX, int(from.Coordinates.Y)+sumY; uint8(itX) != to.Coordinates.X && uint8(itY) != to.Coordinates.Y; {
 		square := squares[CoordinateToSquareIdentifier(Coordinate{uint8(itX), uint8(itY)})]
+
 		if !square.Empty {
 			return false
 		}

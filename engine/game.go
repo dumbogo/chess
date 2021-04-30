@@ -4,8 +4,9 @@ import (
 	"errors"
 )
 
-// TODO: list
-// Pawn Promotion
+// TODO: Pawn Promotion
+// TODO: check if En passant to delete Pawn
+// TODO: check Castling(short & large)
 
 // Player gammer
 type Player struct {
@@ -28,9 +29,9 @@ type Game interface {
 	Turn() Player
 	// Move moves a piece in the Board, returns true if moved
 	Move(player Player, form, to SquareIdentifier) (bool, error)
-	// IsCheckBy returns Player making check
+	// IsCheckBy returns true if Player makes check
 	IsCheckBy(Player) bool
-	// IsCheckmateBy returns Player making checkmate
+	// IsCheckmateBy returns true if Player makes checkmate
 	IsCheckmateBy(Player) bool
 	// Board get board
 	Board() Board
@@ -139,8 +140,6 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 		return false, nil
 	}
 
-	// TODO: check if En passant to delete Pawn
-	// TODO: check Castling(short & large)
 	var pieceEaten Piece
 	if !squareTo.Empty {
 		pieceEaten = squareTo.Piece
@@ -169,14 +168,43 @@ func (g *game) Movements() []Movement {
 	return g.movements
 }
 
-func (g *game) IsCheckBy(p Player) bool {
-	// TODO: End
+func (g *game) IsCheckBy(player Player) bool {
+	var kingSquare Square
+	playerColor := player.Color
+	if playerColor == WhiteColor {
+		kingSquare = getKingSquare(g.Board(), BlackColor)
+	} else {
+		kingSquare = getKingSquare(g.Board(), WhiteColor)
+	}
+	if kingEatableInSquare(kingSquare.Piece.Color(), g.Board(), g.Movements(), kingSquare) {
+		return true
+	}
 	return false
 }
 
-func (g *game) IsCheckmateBy(p Player) bool {
-	// TODO: end
-	return false
+func (g *game) IsCheckmateBy(player Player) bool {
+	if !g.IsCheckBy(player) {
+		return false
+	}
+	var kingSquare Square
+	playerColor := player.Color
+	if playerColor == WhiteColor {
+		kingSquare = getKingSquare(g.Board(), BlackColor)
+	} else {
+		kingSquare = getKingSquare(g.Board(), WhiteColor)
+	}
+	// iterate all possible movements and checks if king can move to at least one direction
+	for x := kingSquare.Coordinates.X - 1; x <= kingSquare.Coordinates.X+1; x++ {
+		for y := kingSquare.Coordinates.Y - 1; y <= kingSquare.Coordinates.Y+1; y++ {
+			if (x > MAXX || y > MAXY) || x == kingSquare.Coordinates.X && y == kingSquare.Coordinates.Y {
+				continue
+			}
+			if kingSquare.Piece.CanMove(g.Board(), g.Movements(), kingSquare, g.Board().Squares()[CoordinateToSquareIdentifier(Coordinate{x, y})]) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func (g *game) Board() Board {
@@ -204,4 +232,15 @@ func (g *game) removePiecePlayer(p Piece) {
 	case WhiteColor:
 		g.whitePieces[p.Identifier()]--
 	}
+}
+
+func getKingSquare(board Board, color Color) Square {
+	var kingSquare Square
+	for _, square := range board.Squares() {
+		if !square.Empty && square.Piece.Identifier() == KingIdentifier && square.Piece.Color() == color {
+			kingSquare = square
+			break
+		}
+	}
+	return kingSquare
 }

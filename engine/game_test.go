@@ -126,14 +126,27 @@ func TestMove(t *testing.T) {
 	assert.Empty(err)
 }
 
-func TestIsCheckBy(t *testing.T) {
-	// TODO: wip
-	t.Skip()
-}
+func TestIsCheckmateBy(t *testing.T) {
+	assert := assert.New(t)
 
-func TestIsCheckmate(t *testing.T) {
-	// TODO: wip
-	t.Skip()
+	// Case: checkmate, Fool's mate
+	Joel := Player{"Joel", WhiteColor}
+	Luis := Player{"Luis", BlackColor}
+	game, e := NewGame("Fool's mate", Luis, Joel)
+	check(e)
+
+	game.Move(Joel, E2, E4)
+	game.Move(Luis, G7, G5)
+	game.Move(Joel, B1, C3)
+
+	no := game.IsCheckmateBy(Joel)
+	assert.False(no)
+
+	game.Move(Luis, F7, F5)
+	game.Move(Joel, D1, H5)
+
+	yes := game.IsCheckmateBy(Joel)
+	assert.True(yes)
 }
 
 func TestBoard(t *testing.T) {
@@ -158,4 +171,10 @@ func TestGameString(t *testing.T) {
 +---+----+----+----+----+----+----+----+----+
 `
 	assert.Equal(expected, r)
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
