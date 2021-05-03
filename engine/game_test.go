@@ -31,7 +31,7 @@ func TestNewGame(t *testing.T) {
 	assert.Equal(errors.New("Must define black and white players"), err)
 
 	// When no errors
-	game, err = testCaseGameGenerate()
+	_, err = testCaseGameGenerate()
 	assert.Equal(nil, err)
 }
 

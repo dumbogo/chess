@@ -21,7 +21,7 @@ var (
 )
 
 var startCmd = &cobra.Command{
-	Use:   "run",
+	Use:   "start",
 	Short: "Start API server",
 	Long:  "Start API server",
 	Run: func(cmd *cobra.Command, args []string) {

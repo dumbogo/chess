@@ -1,0 +1,8 @@
+# This is a TOML document
+
+title = "Client TOML config sample"
+
+API_SERVER_URL = "10.0.0.1"
+
+## Public key currently is not used, but needs to be defined
+PUBLIC_KEY_FILE = "$HOME/.ssh/id_rsa.pub"

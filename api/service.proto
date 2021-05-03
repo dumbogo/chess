@@ -8,12 +8,13 @@ service ChessService {
 	rpc Move(MoveRequest) returns (MoveResponse);
 }
 
+enum Color {
+	BLACK = 0;
+	WHITE = 1;
+}
+
 message StartGameRequest {
 	string name = 1;
-	enum Color {
-		BLACK = 0;
-		WHITE = 1;
-	}
 	Color color = 2;
 }
 
@@ -28,11 +29,13 @@ message JoinGameRequest {
 
 message JoinGameResponse {
 	string uuid = 1;
+	string name = 2;
+	Color color = 3;
 }
 
 message MoveRequest {
 	string uuid = 1;
-	string color =  2;
+	Color color =  2;
 	string from_square = 3;
 	string to_square = 4;
 }
