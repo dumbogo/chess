@@ -1,0 +1,43 @@
+syntax = "proto3";
+
+option go_package = "github.com/dumbogo/chess/api";
+
+service ChessService {
+	rpc StartGame(StartGameRequest) returns (StartGameResponse);
+	rpc JoinGame(JoinGameRequest) returns (JoinGameResponse);
+	rpc Move(MoveRequest) returns (MoveResponse);
+}
+
+message StartGameRequest {
+	string name = 1;
+	enum Color {
+		BLACK = 0;
+		WHITE = 1;
+	}
+	Color color = 2;
+}
+
+
+message StartGameResponse {
+	string uuid = 2;
+}
+
+message JoinGameRequest {
+	string uuid = 1;
+}
+
+message JoinGameResponse {
+	string uuid = 1;
+}
+
+message MoveRequest {
+	string uuid = 1;
+	string color =  2;
+	string from_square = 3;
+	string to_square = 4;
+}
+
+message MoveResponse {
+	string status_code = 1;
+	string error = 2;
+}
