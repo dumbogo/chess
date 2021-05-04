@@ -1,0 +1,15 @@
+---
+version: '3'
+networks:
+  chess:
+    external: true
+services:
+  postgresql:
+    image: postgres
+    container_name: chess_postgresql
+    environment:
+      - POSTGRES_PASSWORD=password
+    networks:
+      - chess
+    ports:
+      - 5432:5432

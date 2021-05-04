@@ -1,0 +1,7 @@
+[API]
+port = ":8000"
+
+[Database]
+host = "127.0.0.1"
+port = "5432"
+db_name = "chess_api"
