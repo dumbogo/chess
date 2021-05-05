@@ -59,9 +59,9 @@ func initConfig() {
 	dbPort = v.GetString("Database.port")
 	dbName = v.GetString("Database.db_name")
 
-	// TODO: Load envs
-	v.SetEnvPrefix("CHESS_API") // will be uppercased automatically
-	v.AllowEmptyEnv(true)
+	// TODO: Set ENVS as mandatory
+	v.SetEnvPrefix("CHESS_API")
+	v.AllowEmptyEnv(false) // This doesn't work as expected
 	v.BindEnv("database_username")
 	v.BindEnv("database_password")
 	dbUser = v.GetString("database_username")
@@ -79,7 +79,7 @@ var startCmd = &cobra.Command{
 		}
 		s := grpc.NewServer()
 
-		db, err := api.InitDb(dbHost, dbPort, dbUser, dbPassword, dbName)
+		db, err := api.InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbName)
 		if err != nil {
 			log.Fatalf("failed to connect databse: %v", err)
 		}

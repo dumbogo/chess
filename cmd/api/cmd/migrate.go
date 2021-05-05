@@ -18,7 +18,7 @@ var migrateCmd = &cobra.Command{
 	Short: "database migrations",
 	Long:  "Run API database migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		db, err := api.InitDb(dbHost, dbPort, dbUser, dbPassword, dbName)
+		db, err := api.InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbName)
 		if err != nil {
 			log.Fatalf("failed to connect databse: %v", err)
 		}

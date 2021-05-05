@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	github.com/golang/mock v1.5.0
+	github.com/google/uuid v1.2.0
 	github.com/olekukonko/tablewriter v0.0.5
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/viper v1.7.1

@@ -8,8 +8,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestInitDb(t *testing.T) { // TODO: initialize testdb programatically before running tests
+func TestInitDbConn(t *testing.T) {
 	assert := assert.New(t)
-	_, err := InitDb("localhost", "5432", "postgres", "password", "testdb")
+	_, err := InitDbConn("localhost", "5432", "postgres", "password", "chess_api")
 	assert.Equal(nil, err)
 }
