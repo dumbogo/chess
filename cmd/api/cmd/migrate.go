@@ -25,6 +25,6 @@ var migrateCmd = &cobra.Command{
 		if err := api.Migrate(db); err != nil {
 			log.Fatalf("failed to run migrations: %v", err)
 		}
-		log.Printf("Succesfully ran migrations")
+		log.Printf("Successfully ran migrations")
 	},
 }
