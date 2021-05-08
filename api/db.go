@@ -2,6 +2,8 @@ package api
 
 import (
 	"database/sql"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 
@@ -49,13 +51,61 @@ type Game struct {
 	WhitePlayerID sql.NullInt32
 	BlackPlayer   Player
 	BlackPlayerID sql.NullInt32
-	Turn          int `gorm:"default:1"`
+	Turn          uint
 	Winner        int
-	Movements     []Movement
-	WhitePieces   map[uint8]uint8 `gorm:"type:jsonb;not null"`
-	BlackPieces   map[uint8]uint8 `gorm:"type:jsonb;not null"`
-	BoardSquares  engine.Squares  `gorm:"type:jsonb;not null"`
+	Movements     []Movement // TODO: this will cause problems
+	WhitePieces   pieces     `gorm:"type:jsonb;not null"`
+	BlackPieces   pieces     `gorm:"type:jsonb;not null"`
+	BoardSquares  squares    `gorm:"type:jsonb;not null"` // TODO: needs to change, not working, more info at line 79
 }
+
+type pieces map[uint8]uint8
+
+// Scan scan value into Jsonb, implements sql.Scanner interface
+func (p *pieces) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+	}
+	result := pieces{}
+	err := json.Unmarshal(bytes, &result)
+	*p = result
+	return err
+}
+
+// =-----------------EXPERIMENTAL=======================
+type squares engine.Squares
+
+type square struct {
+	engine.Square
+	Piece piece `json:"piece"`
+}
+
+type piece struct {
+	PieceIdentifier engine.PieceIdentifier `json:"piece_identifier"`
+	Color           Color                  `json:"color"`
+}
+
+// Scan implements Scanner interface
+// TODO: Not decoding properly square.Piece property, returns error
+func (s *squares) Scan(value interface{}) error {
+	bytes, ok := value.([]byte)
+	if !ok {
+		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
+	}
+	result := squares{}
+	err := json.Unmarshal(bytes, &result) // returns not nil error
+	// json.Unmarshal(bytes, &result)
+	fmt.Printf("error: %+v\n", err)
+	// error: json: cannot unmarshal object into Go struct field Square.Piece of type engine.Piece
+	// *s = result
+	return nil
+}
+
+// Value return json value, implement driver.Valuer interface
+// func (s squares) Value() (driver.Value, error) {} // TODO: Implement
+
+// =-----------------END EXPERIMENTAL=======================
 
 // Player Model
 type Player struct {

@@ -7,24 +7,50 @@ import (
 	"testing"
 	"time"
 
-	"github.com/dumbogo/chess/client"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 )
 
+func factoryServer() *Server {
+	dbConn := initDbConnFactory()
+	return &Server{
+		Db: dbConn,
+	}
+}
+
 func TestServerStartGame(t *testing.T) {
 	assert := assert.New(t)
-	conn, err := client.InitConn()
-	assert.Nil(err)
-	defer conn.Close()
-	c := NewChessServiceClient(conn)
-
+	server := factoryServer()
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
-	r, err := c.StartGame(ctx, &StartGameRequest{
+	r, err := server.StartGame(ctx, &StartGameRequest{
 		Name:  "somename",
 		Color: Color_WHITE,
 	})
 	assert.Nil(err)
 	uuid.MustParse(r.GetUuid())
+}
+
+func TestServerJoinGame(t *testing.T) {
+	// Create a game
+	assert := assert.New(t)
+	server := factoryServer()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	r, err := server.StartGame(ctx, &StartGameRequest{
+		Name:  "somename",
+		Color: Color_WHITE,
+	})
+	assert.Nil(err)
+	uuid.MustParse(r.GetUuid())
+
+	// Join a game:
+	ctxJoin, cancelJoin := context.WithTimeout(context.Background(), time.Second)
+	defer cancelJoin()
+	joinGameResponse, err := server.JoinGame(ctxJoin, &JoinGameRequest{
+		Uuid: r.GetUuid(),
+	})
+	assert.Nil(err)
+	assert.Equal(r.GetUuid(), joinGameResponse.GetUuid())
+	assert.Equal(Color_BLACK, joinGameResponse.GetColor())
 }
