@@ -28,7 +28,7 @@ func TestNewGame(t *testing.T) {
 		Player{Name: "Luis", Color: WhiteColor},
 	)
 	assert.Equal(nil, game)
-	assert.Equal(errors.New("Must define black and white players"), err)
+	assert.Equal(errors.New("must define black and white players"), err)
 
 	// When no errors
 	_, err = testCaseGameGenerate()
