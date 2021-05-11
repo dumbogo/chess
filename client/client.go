@@ -102,5 +102,7 @@ func storeGame(uuid string, name string, color pb.Color) {
 	viper.Set("game.uuid", uuid)
 	viper.Set("game.name", name)
 	viper.Set("game.color", color)
-	viper.WriteConfig()
+	if err := viper.WriteConfig(); err != nil {
+		panic(err)
+	}
 }

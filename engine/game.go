@@ -59,7 +59,7 @@ type game struct {
 // NewGame creates new Game
 func NewGame(name string, black, white Player) (Game, error) {
 	if white.Color != WhiteColor || black.Color != BlackColor {
-		return nil, errors.New("Must define black and white players")
+		return nil, errors.New("must define black and white players")
 	}
 
 	blackPieces := map[PieceIdentifier]uint8{
@@ -126,7 +126,7 @@ func (g *game) BlackPieces() map[PieceIdentifier]uint8 {
 func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 	squareFrom := g.board.Squares()[from]
 	squareTo := g.board.Squares()[to]
-	if squareFrom.Empty == true {
+	if squareFrom.Empty {
 		return false, nil
 	}
 

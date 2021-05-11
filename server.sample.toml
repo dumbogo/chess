@@ -5,3 +5,8 @@ port = ":8000"
 host = "127.0.0.1"
 port = "5432"
 db_name = "chess_api"
+
+[HTTP_server]
+Scheme = "http"
+Host = "dev.aguileraglz.xyz"
+Port = ":8080"

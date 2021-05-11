@@ -1,10 +1,17 @@
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"net"
+	"net/http"
+	"net/url"
 	"path/filepath"
 
+	"github.com/gorilla/mux"
+	"github.com/markbates/goth"
+	"github.com/markbates/goth/gothic"
+	"github.com/markbates/goth/providers/github"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -26,9 +33,18 @@ var (
 	dbPort string // Database.port
 	dbName string // Database.db_name
 
+	// HTTP server
+	httpServerScheme string // HTTP_server.Scheme
+	httpServerHost   string // HTTP_server.Host
+	httpServerPort   string // HTTP_server.Port
+
 	// Sensitive config
 	dbUser     string // CHESS_API_DATABASE_USERNAME env
 	dbPassword string // CHESS_API_DATABASE_PASSWORD env
+
+	// Github credentials
+	githubKey    string // CHESS_API_GITHUB_KEY
+	githubSecret string // CHESS_API_GITHUB_SECRET
 )
 
 func init() {
@@ -59,13 +75,21 @@ func initConfig() {
 	dbPort = v.GetString("Database.port")
 	dbName = v.GetString("Database.db_name")
 
+	httpServerScheme = v.GetString("HTTP_server.Scheme")
+	httpServerHost = v.GetString("HTTP_server.Host")
+	httpServerPort = v.GetString("HTTP_server.Port")
+
 	// TODO: Set ENVS as mandatory
 	v.SetEnvPrefix("CHESS_API")
 	v.AllowEmptyEnv(false) // This doesn't work as expected
 	v.BindEnv("database_username")
 	v.BindEnv("database_password")
+	v.BindEnv("github_key")
+	v.BindEnv("github_secret")
 	dbUser = v.GetString("database_username")
 	dbPassword = v.GetString("database_password")
+	githubKey = v.GetString("github_key")
+	githubSecret = v.GetString("github_secret")
 }
 
 var startCmd = &cobra.Command{
@@ -78,7 +102,6 @@ var startCmd = &cobra.Command{
 			log.Fatalf("failed to listen: %v", err)
 		}
 		s := grpc.NewServer()
-
 		db, err := api.InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbName)
 		if err != nil {
 			log.Fatalf("failed to connect databse: %v", err)
@@ -86,8 +109,43 @@ var startCmd = &cobra.Command{
 		pb.RegisterChessServiceServer(s, &pb.Server{
 			Db: db,
 		})
+
+		// ------- EXPERIMENTAL -----------
+		go func() {
+			r := NewHandler(url.URL{Scheme: httpServerScheme, Host: httpServerHost}, githubKey, githubSecret)
+			log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost%s", httpServerPort), r))
+		}()
+		// ------- END EXPERIMENTAL -----------
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	},
+}
+
+// NewHandler returns a new Handler with configured HTTP routes
+func NewHandler(urlLoc url.URL, githubKey, githubSecret string) http.Handler {
+	// TODO: Refactor
+	r := mux.NewRouter()
+	r.HandleFunc("/auth/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("Received request: %+v\n", r)
+		fmt.Println(gothic.GetState(r))
+		user, err := gothic.CompleteUserAuth(w, r)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Fprintln(w, "logged in!", user)
+	})
+	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler)
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "<p><a href='/auth/github?provider=github'>Click to log in with github</a></p>")
+	})
+	provierCallbackURL := fmt.Sprintf("%s://%s/auth/github/callback?provider=github", urlLoc.Scheme, urlLoc.Host)
+	fmt.Printf("Porivider callback: %s\n", provierCallbackURL)
+	goth.UseProviders(
+		github.New(githubKey, githubSecret, provierCallbackURL),
+	)
+	gothic.GetState = func(r *http.Request) string {
+		return r.URL.Query().Get("state")
+	}
+	return r
 }
