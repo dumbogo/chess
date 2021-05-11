@@ -13,10 +13,14 @@ import (
 	"gorm.io/gorm"
 )
 
-// InitDbConn initialize database connection postgresql
+// DBConn stores DB Connection
+var DBConn *gorm.DB
+
+// InitDbConn initialize database connection to postgresql
 func InitDbConn(host, port, user, password, dbname string) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, user, password, dbname, port)
-	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	DbConn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	return DbConn, err
 }
 
 // Migrate runs migrations

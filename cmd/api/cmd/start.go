@@ -8,10 +8,6 @@ import (
 	"net/url"
 	"path/filepath"
 
-	"github.com/gorilla/mux"
-	"github.com/markbates/goth"
-	"github.com/markbates/goth/gothic"
-	"github.com/markbates/goth/providers/github"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
@@ -110,42 +106,15 @@ var startCmd = &cobra.Command{
 			Db: db,
 		})
 
-		// ------- EXPERIMENTAL -----------
+		// Load HTTP server
 		go func() {
-			r := NewHandler(url.URL{Scheme: httpServerScheme, Host: httpServerHost}, githubKey, githubSecret)
-			log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost%s", httpServerPort), r))
+			api.InitHTTPRouter(url.URL{Scheme: httpServerScheme, Host: httpServerHost}, githubKey, githubSecret)
+			log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost%s", httpServerPort), api.HTTPRouter))
 		}()
-		// ------- END EXPERIMENTAL -----------
+
+		// Load grpc server
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
 	},
-}
-
-// NewHandler returns a new Handler with configured HTTP routes
-func NewHandler(urlLoc url.URL, githubKey, githubSecret string) http.Handler {
-	// TODO: Refactor
-	r := mux.NewRouter()
-	r.HandleFunc("/auth/{provider}/callback", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Printf("Received request: %+v\n", r)
-		fmt.Println(gothic.GetState(r))
-		user, err := gothic.CompleteUserAuth(w, r)
-		if err != nil {
-			panic(err)
-		}
-		fmt.Fprintln(w, "logged in!", user)
-	})
-	r.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler)
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "<p><a href='/auth/github?provider=github'>Click to log in with github</a></p>")
-	})
-	provierCallbackURL := fmt.Sprintf("%s://%s/auth/github/callback?provider=github", urlLoc.Scheme, urlLoc.Host)
-	fmt.Printf("Porivider callback: %s\n", provierCallbackURL)
-	goth.UseProviders(
-		github.New(githubKey, githubSecret, provierCallbackURL),
-	)
-	gothic.GetState = func(r *http.Request) string {
-		return r.URL.Query().Get("state")
-	}
-	return r
 }
