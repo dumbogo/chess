@@ -1,5 +1,7 @@
 [API]
 port = ":8000"
+server_cert = "/opt/data/chessapi/x509/server_cert.pem"
+server_key = "/opt/data/chessapi/x509/server_key.pem"
 
 [Database]
 host = "127.0.0.1"

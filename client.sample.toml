@@ -1,8 +1,22 @@
-# This is a TOML document
-
 title = "Client TOML config sample"
 
-API_SERVER_URL = "10.0.0.1"
+## GRPC server game url
+api_server_url = "localhost:8000"
 
 ## Public key currently is not used, but needs to be defined
-PUBLIC_KEY_FILE = "$HOME/.ssh/id_rsa.pub"
+public_key_file = "$HOME/.ssh/id_rsa.pub"
+
+# Client_certfile TLS connection to GRPC server
+client_certfile = "[$HOME/.chess/certs/x509/contoso.crt"
+
+# serverNameOverride GRPC server, is for testing only. If set to a non empty string,
+# it will override the virtual host name of authority (e.g. :authority header
+# field) in requests.
+servername_override = "www.fabrikam.com"
+
+
+
+[game]
+  color = "WHITE"
+  name = "some"
+  uuid = "5996c254-b272-11eb-ad74-0242ac120002"

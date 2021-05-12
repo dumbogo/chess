@@ -9,13 +9,22 @@ import (
 	pb "github.com/dumbogo/chess/api"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var (
 	// APIServerURL URL API to make calls
-	APIServerURL string
+	APIServerURL string // API_SERVER_URL
 	// PublicKeyFile Local file location public key to authenticate
-	PublicKeyFile string
+	PublicKeyFile string // PUBLIC_KEY_FILE
+
+	// ClientCertfile client certificate TLS location file
+	ClientCertfile string // CLIENT_CERTFILE
+
+	// ServerNameOverride is for testing only. If set to a non empty string,
+	// it will override the virtual host name of authority (e.g. :authority header
+	// field) in requests.
+	ServerNameOverride string // SERVERNAME_OVERRIDE
 
 	configName = "config"
 	configType = "toml"
@@ -39,11 +48,22 @@ func initConfig() {
 	}
 	APIServerURL = viper.GetString("API_SERVER_URL")
 	PublicKeyFile = viper.GetString("PUBLIC_KEY_FILE")
+	ClientCertfile = viper.GetString("CLIENT_CERTFILE")
+	ServerNameOverride = viper.GetString("SERVERNAME_OVERRIDE")
+
 }
 
 // InitConn initializes client connection to GRPC server
 func InitConn() (*grpc.ClientConn, error) {
-	return grpc.Dial(APIServerURL, grpc.WithInsecure())
+	creds, err := credentials.NewClientTLSFromFile(ClientCertfile, ServerNameOverride)
+	if err != nil {
+		log.Fatalf("failed to load credentials: %v", err)
+	}
+	opts := []grpc.DialOption{
+		grpc.WithTransportCredentials(creds),
+	}
+	// opts = append(opts, grpc.WithBlock())
+	return grpc.Dial(APIServerURL, opts...)
 }
 
 // StartGame creates a new Game

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/dumbogo/chess/api"
 	pb "github.com/dumbogo/chess/api"
@@ -21,7 +23,9 @@ var (
 	configFileType = "toml"
 
 	// API config
-	apiPort string // API.port
+	apiPort       string // API.port
+	apiServerCert string // API.server_cert
+	apiServerKey  string // API.server_key
 
 	// Database config
 
@@ -66,6 +70,8 @@ func initConfig() {
 		}
 	}
 	apiPort = v.GetString("API.port")
+	apiServerCert = v.GetString("API.server_cert")
+	apiServerKey = v.GetString("API.server_key")
 
 	dbHost = v.GetString("Database.host")
 	dbPort = v.GetString("Database.port")
@@ -97,7 +103,16 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
-		s := grpc.NewServer()
+
+		cert, err := tls.LoadX509KeyPair(apiServerCert, apiServerKey)
+		if err != nil {
+			log.Fatalf("failed to load key pair: %s", err)
+		}
+		opts := []grpc.ServerOption{
+			// Enable TLS for all incoming connections.
+			grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
+		}
+		s := grpc.NewServer(opts...)
 		db, err := api.InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbName)
 		if err != nil {
 			log.Fatalf("failed to connect databse: %v", err)

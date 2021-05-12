@@ -24,7 +24,6 @@ func InitHTTPRouter(urlLoc url.URL, githubKey, githubSecret string) {
 		fmt.Fprintf(w, "<p><a href='/auth/github?provider=github'>Click to log in with github</a></p>")
 	})
 	provierCallbackURL := fmt.Sprintf("%s://%s/auth/github/callback?provider=github", urlLoc.Scheme, urlLoc.Host)
-	fmt.Printf("Porivider callback: %s\n", provierCallbackURL)
 	goth.UseProviders(
 		github.New(githubKey, githubSecret, provierCallbackURL),
 	)
