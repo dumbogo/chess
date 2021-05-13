@@ -22,6 +22,8 @@ var (
 	configFile     string
 	configFileType = "toml"
 
+	// Env environent, production, test, development
+	Env string // ENV
 	// API config
 	apiPort       string // API.port
 	apiServerCert string // API.server_cert
@@ -69,6 +71,12 @@ func initConfig() {
 			panic(err)
 		}
 	}
+	// Set default env to development if not set
+	Env = v.GetString("ENV")
+	if !(Env == api.EnvProduction || Env == api.EnvTest || Env == api.EnvDev) {
+		Env = api.EnvDev
+	}
+
 	apiPort = v.GetString("API.port")
 	apiServerCert = v.GetString("API.server_cert")
 	apiServerKey = v.GetString("API.server_key")
@@ -123,7 +131,15 @@ var startCmd = &cobra.Command{
 
 		// Load HTTP server
 		go func() {
-			api.InitHTTPRouter(url.URL{Scheme: httpServerScheme, Host: httpServerHost}, githubKey, githubSecret)
+			api.InitHTTPRouter(api.ConfigHTTPRouter{
+				URLLoc:       url.URL{Scheme: httpServerScheme, Host: httpServerHost},
+				GithubKey:    githubKey,
+				GithubSecret: githubSecret,
+				// Ensure your key is sufficiently random - i.e. use Go's
+				// crypto/rand or securecookie.GenerateRandomKey(32) and persist the result.
+				SessionKey: "somerandomtext",
+				Env:        Env,
+			})
 			log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost%s", httpServerPort), api.HTTPRouter))
 		}()
 

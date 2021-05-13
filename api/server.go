@@ -90,7 +90,7 @@ func (s *Server) JoinGame(ctx context.Context, r *JoinGameRequest) (*JoinGameRes
 	}
 
 	if game.BlackPlayerID.Valid && game.WhitePlayerID.Valid {
-		return nil, errors.New("Already full game")
+		return nil, errors.New("already full game")
 	}
 	var color Color
 	if game.BlackPlayerID.Valid {

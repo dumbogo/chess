@@ -1,3 +1,5 @@
+ENV= "development"
+
 [API]
 port = ":8000"
 server_cert = "/opt/data/chessapi/x509/server_cert.pem"

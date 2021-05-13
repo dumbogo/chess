@@ -80,15 +80,15 @@ func (p *pieces) Scan(value interface{}) error {
 // =-----------------EXPERIMENTAL=======================
 type squares engine.Squares
 
-type square struct {
-	engine.Square
-	Piece piece `json:"piece"`
-}
-
-type piece struct {
-	PieceIdentifier engine.PieceIdentifier `json:"piece_identifier"`
-	Color           Color                  `json:"color"`
-}
+// type square struct {
+// 	engine.Square
+// 	Piece piece `json:"piece"`
+// }
+//
+// type piece struct {
+// 	PieceIdentifier engine.PieceIdentifier `json:"piece_identifier"`
+// 	Color           Color                  `json:"color"`
+// }
 
 // Scan implements Scanner interface
 // TODO: Not decoding properly square.Piece property, returns error

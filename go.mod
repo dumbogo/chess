@@ -6,6 +6,7 @@ require (
 	github.com/golang/mock v1.5.0
 	github.com/google/uuid v1.2.0
 	github.com/gorilla/mux v1.8.0 // indirect
+	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/jackc/pgx/v4 v4.10.1 // indirect
 	github.com/markbates/goth v1.67.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5
