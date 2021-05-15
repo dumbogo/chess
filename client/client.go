@@ -8,15 +8,15 @@ import (
 
 	pb "github.com/dumbogo/chess/api"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/oauth"
 )
 
 var (
 	// APIServerURL URL API to make calls
 	APIServerURL string // API_SERVER_URL
-	// PublicKeyFile Local file location public key to authenticate
-	PublicKeyFile string // PUBLIC_KEY_FILE
 
 	// ClientCertfile client certificate TLS location file
 	ClientCertfile string // CLIENT_CERTFILE
@@ -25,6 +25,9 @@ var (
 	// it will override the virtual host name of authority (e.g. :authority header
 	// field) in requests.
 	ServerNameOverride string // SERVERNAME_OVERRIDE
+
+	// AuthToken token authenticated to make API calls
+	AuthToken string // oauth2.*.token
 
 	configName = "config"
 	configType = "toml"
@@ -47,19 +50,28 @@ func initConfig() {
 		}
 	}
 	APIServerURL = viper.GetString("API_SERVER_URL")
-	PublicKeyFile = viper.GetString("PUBLIC_KEY_FILE")
 	ClientCertfile = viper.GetString("CLIENT_CERTFILE")
 	ServerNameOverride = viper.GetString("SERVERNAME_OVERRIDE")
-
+	AuthToken = viper.GetString("oauth2.github.token") // TODO: hardcoded to github, change it when implementing more providers
 }
 
 // InitConn initializes client connection to GRPC server
 func InitConn() (*grpc.ClientConn, error) {
+	// Set up the credentials for the connection.
+	perRPC := oauth.NewOauthAccess(&oauth2.Token{
+		AccessToken: AuthToken,
+	})
+
 	creds, err := credentials.NewClientTLSFromFile(ClientCertfile, ServerNameOverride)
 	if err != nil {
 		log.Fatalf("failed to load credentials: %v", err)
 	}
 	opts := []grpc.DialOption{
+		// In addition to the following grpc.DialOption, callers may also use
+		// the grpc.CallOption grpc.PerRPCCredentials with the RPC invocation
+		// itself.
+		// See: https://godoc.org/google.golang.org/grpc#PerRPCCredentials
+		grpc.WithPerRPCCredentials(perRPC),
 		grpc.WithTransportCredentials(creds),
 	}
 	// opts = append(opts, grpc.WithBlock())
@@ -122,6 +134,14 @@ func storeGame(uuid string, name string, color pb.Color) {
 	viper.Set("game.uuid", uuid)
 	viper.Set("game.name", name)
 	viper.Set("game.color", color)
+	if err := viper.WriteConfig(); err != nil {
+		panic(err)
+	}
+}
+
+// RegisterGithubToken records token on persisted config
+func RegisterGithubToken(token string) {
+	viper.Set("oauth2.github.token", token)
 	if err := viper.WriteConfig(); err != nil {
 		panic(err)
 	}

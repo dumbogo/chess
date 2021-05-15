@@ -19,19 +19,20 @@ var DBConn *gorm.DB
 // InitDbConn initialize database connection to postgresql
 func InitDbConn(host, port, user, password, dbname string) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=disable", host, user, password, dbname, port)
-	DbConn, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	return DbConn, err
+	var err error
+	DBConn, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	return DBConn, err
 }
 
 // Migrate runs migrations
-func Migrate(db *gorm.DB) error {
-	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;").Error; err != nil {
+func Migrate() error {
+	if err := DBConn.Exec("CREATE EXTENSION IF NOT EXISTS pgcrypto;").Error; err != nil {
 		log.Fatalf("Failed to create extension pgcrypto, got error %v", err)
 	}
-	if err := db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error; err != nil {
+	if err := DBConn.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";").Error; err != nil {
 		log.Fatalf("Failed to create extension uuid-ossp, got error %v", err)
 	}
-	return db.AutoMigrate(
+	return DBConn.AutoMigrate(
 		&User{},
 		&Game{},
 		&Player{},
@@ -42,8 +43,24 @@ func Migrate(db *gorm.DB) error {
 // User Model
 type User struct {
 	gorm.Model
-	Username  string
-	PublicKey []byte
+	Email             string `gorm:"unique"`
+	Name              string
+	FirstName         string
+	LastName          string
+	NickName          string
+	UserID            string
+	AccessToken       string
+	AccessTokenSecret string
+	RefreshToken      string
+	ExpiresAt         sql.NullTime
+	IDToken           string
+}
+
+// GetUserFromAccessToken returns user from database with accesstoken set
+func GetUserFromAccessToken(accessToken string) User {
+	user := User{}
+	DBConn.Where("access_token=?", accessToken).First(&user)
+	return user
 }
 
 // Game Model

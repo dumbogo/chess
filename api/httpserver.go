@@ -1,7 +1,9 @@
 package api
 
 import (
+	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/markbates/goth"
 	"github.com/markbates/goth/gothic"
 	"github.com/markbates/goth/providers/github"
+	"gorm.io/gorm/clause"
 )
 
 // HTTPRouter Mux router for HTTP server
@@ -49,13 +52,37 @@ func InitHTTPRouter(c ConfigHTTPRouter) {
 }
 
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Printf("Received request: %+v\n", r)
-	fmt.Println(gothic.GetState(r))
+	// TODO: needs to delete this, leaving it as project is on development
+	log.Printf("Received request: %+v\n", r)
+	log.Println(gothic.GetState(r))
+	// Ends todo
+
 	user, err := gothic.CompleteUserAuth(w, r)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Fprintln(w, "logged in!", user)
+
+	userdb := User{
+		Email:             user.Email,
+		Name:              user.Name,
+		FirstName:         user.FirstName,
+		LastName:          user.LastName,
+		NickName:          user.NickName,
+		UserID:            user.UserID,
+		AccessToken:       user.AccessToken,
+		AccessTokenSecret: user.AccessTokenSecret,
+		RefreshToken:      user.RefreshToken,
+		IDToken:           user.IDToken,
+	}
+	if user.ExpiresAt.IsZero() {
+		userdb.ExpiresAt = sql.NullTime{Valid: false}
+	} else {
+		userdb.ExpiresAt = sql.NullTime{Valid: true, Time: user.ExpiresAt}
+	}
+	// Update all columns, except primary keys, to new value on conflict
+	DBConn.Clauses(clause.OnConflict{
+		UpdateAll: true,
+	}).Create(&userdb)
 }
 
 func initGothicStore(key string, env string) {

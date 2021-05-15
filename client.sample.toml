@@ -3,9 +3,6 @@ title = "Client TOML config sample"
 ## GRPC server game url
 api_server_url = "localhost:8000"
 
-## Public key currently is not used, but needs to be defined
-public_key_file = "$HOME/.ssh/id_rsa.pub"
-
 # Client_certfile TLS connection to GRPC server
 client_certfile = "[$HOME/.chess/certs/x509/contoso.crt"
 
@@ -14,7 +11,10 @@ client_certfile = "[$HOME/.chess/certs/x509/contoso.crt"
 # field) in requests.
 servername_override = "www.fabrikam.com"
 
-
+# oauth2, by provider, i.e., an authenticated client with github, storing token client user
+[oauth2]
+  [oauth2.github]
+token = "somevalidtoken"
 
 [game]
   color = "WHITE"

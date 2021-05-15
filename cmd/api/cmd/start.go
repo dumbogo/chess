@@ -117,6 +117,11 @@ var startCmd = &cobra.Command{
 			log.Fatalf("failed to load key pair: %s", err)
 		}
 		opts := []grpc.ServerOption{
+			// The following grpc.ServerOption adds an interceptor for all unary
+			// RPCs. To configure an interceptor for streaming RPCs, see:
+			// https://godoc.org/google.golang.org/grpc#StreamInterceptor
+			grpc.UnaryInterceptor(api.EnsureValidToken),
+
 			// Enable TLS for all incoming connections.
 			grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		}

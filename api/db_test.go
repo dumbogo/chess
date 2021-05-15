@@ -4,10 +4,10 @@ package api
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"gorm.io/gorm"
 )
 
 var (
@@ -19,41 +19,47 @@ var (
 	dbSchema   = "public"
 )
 
-func dropSchema(gormDb *gorm.DB) { // TODO: implement
-	r := gormDb.Exec(fmt.Sprintf("drop schema %s cascade", dbSchema))
-	check(r.Error)
-	r = gormDb.Exec(fmt.Sprintf("create schema %s", dbSchema))
-	check(r.Error)
+func TestMain(m *testing.M) {
+	setup()
+	code := m.Run()
+	os.Exit(code)
 }
 
-func truncateSchema(gormDb *gorm.DB) {
-	r := gormDb.Exec(fmt.Sprintf("drop schema %s cascade", dbSchema))
-	check(r.Error)
-	r = gormDb.Exec(fmt.Sprintf("create schema %s", dbSchema))
-	check(r.Error)
-	Migrate(gormDb)
-}
-
-func initDbConnFactory() *gorm.DB {
-	conn, err := InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbDatabase)
+func setup() {
+	_, err := InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbDatabase)
 	check(err)
-	return conn
+	truncate()
+}
+
+func truncate() {
+	r := DBConn.Exec(fmt.Sprintf("drop schema %s cascade", dbSchema))
+	check(r.Error)
+	r = DBConn.Exec(fmt.Sprintf("create schema %s", dbSchema))
+	check(r.Error)
+	e := Migrate()
+	check(e)
 }
 
 func TestInitDbConn(t *testing.T) {
 	assert := assert.New(t)
-	conn := initDbConnFactory()
-	assert.NotNil(conn)
+	assert.NotNil(DBConn)
 }
 
 func TestMigrate(t *testing.T) {
 	assert := assert.New(t)
-	gormConn, err := InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbDatabase)
+	err := Migrate()
 	assert.Nil(err)
-	dropSchema(gormConn)
+}
 
-	err = Migrate(gormConn)
-	assert.Nil(err)
+func TestGetUserFromAccessToken(t *testing.T) {
+	assert := assert.New(t)
+	truncate()
+	userCreated := User{
+		AccessToken: "sometoken",
+	}
+	DBConn.Create(&userCreated)
+	userFound := GetUserFromAccessToken("sometoken")
+	assert.Equal(userCreated.ID, userFound.ID)
 }
 
 func check(e error) {

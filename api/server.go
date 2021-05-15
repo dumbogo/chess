@@ -4,9 +4,20 @@ import (
 	context "context"
 	"database/sql"
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/dumbogo/chess/engine"
+	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	status "google.golang.org/grpc/status"
 	"gorm.io/gorm"
+)
+
+var (
+	errMissingMetadata = status.Errorf(codes.InvalidArgument, "missing metadata")
+	errInvalidToken    = status.Errorf(codes.Unauthenticated, "invalid token")
 )
 
 // Server grpc server interface implementation
@@ -17,10 +28,11 @@ type Server struct {
 
 // StartGame starts a new game
 func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameRequest) (*StartGameResponse, error) {
-	// TODO: WIP, needs to get User from auth
-	// 1.---------- change these lines to load user instead
-	user := User{}
-	s.Db.Create(&user)
+	accessToken, err := GetAccessTokenFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	user := GetUserFromAccessToken(accessToken)
 	// 1.----------
 
 	game := Game{
@@ -74,11 +86,11 @@ func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameReque
 
 // JoinGame joins a game
 func (s *Server) JoinGame(ctx context.Context, r *JoinGameRequest) (*JoinGameResponse, error) {
-	// TODO: WIP, needs to get User from auth
-	// 1.---------- change these lines to load user instead
-	user := User{}
-	s.Db.Create(&user)
-	// 1.----------
+	accessToken, err := GetAccessTokenFromCtx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	user := GetUserFromAccessToken(accessToken)
 
 	uuid := r.GetUuid()
 
@@ -130,4 +142,46 @@ func (s *Server) JoinGame(ctx context.Context, r *JoinGameRequest) (*JoinGameRes
 // Move Moves a player piece
 func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error) { // TODO: Implementation
 	panic("Pending implementation")
+}
+
+// EnsureValidToken ensures a valid token exists within a request's metadata. If
+// the token is missing or invalid, the interceptor blocks execution of the
+// handler and returns an error. Otherwise, the interceptor invokes the unary
+// handler.
+func EnsureValidToken(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errMissingMetadata
+	}
+	// The keys within metadata.MD are normalized to lowercase.
+	// See: https://godoc.org/google.golang.org/grpc/metadata#New
+	if !valid(md["authorization"]) {
+		return nil, errInvalidToken
+	}
+	// Continue execution of handler after ensuring a valid token.
+	return handler(ctx, req)
+}
+
+// valid validates the authorization. Returns false if neither user, nor auth token found and token expired
+func valid(authorization []string) bool {
+	if len(authorization) < 1 {
+		return false
+	}
+	accessToken := strings.TrimPrefix(authorization[0], "Bearer ")
+	user := GetUserFromAccessToken(accessToken)
+	if user.Email == "" || user.ExpiresAt.Valid && time.Now().After(user.ExpiresAt.Time) {
+		return false
+	}
+	return true
+}
+
+// GetAccessTokenFromCtx returns access token from ctx object metadata
+func GetAccessTokenFromCtx(ctx context.Context) (string, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return "", errMissingMetadata
+	}
+	authorization := md["authorization"]
+	accessToken := strings.TrimPrefix(authorization[0], "Bearer ")
+	return accessToken, nil
 }
