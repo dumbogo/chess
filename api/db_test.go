@@ -62,6 +62,15 @@ func TestGetUserFromAccessToken(t *testing.T) {
 	assert.Equal(userCreated.ID, userFound.ID)
 }
 
+func TestGameWhere(t *testing.T) {
+	truncate()
+	game := newGameWithoutPlayers("testgame")
+	DBConn.Create(&game)
+	actual := Game{}
+	rx := DBConn.Where("id=?", game.ID).First(&actual)
+	check(rx.Error)
+}
+
 func check(e error) {
 	if e != nil {
 		panic(e)

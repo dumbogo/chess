@@ -386,3 +386,23 @@ func (p *pawn) String() string {
 	}
 	return "BP"
 }
+
+// PieceFromPieceIdentifier returns the corresponding Piece asociated to PieceIdentifier
+func PieceFromPieceIdentifier(i PieceIdentifier, color Color) Piece {
+	switch i {
+	case PawnIdentifier:
+		return NewPawn(color)
+	case BishopIdentifier:
+		return NewBishop(color)
+	case KnightIdentifier:
+		return NewKnight(color)
+	case RookIdentifier:
+		return NewRook(color)
+	case QueenIdentifier:
+		return NewQueen(color)
+	case KingIdentifier:
+		return NewKing(color)
+	default:
+		return nil
+	}
+}

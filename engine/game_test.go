@@ -74,7 +74,7 @@ func TestMove(t *testing.T) {
 	// Try to move an empty square
 	ok, e = testCaseGame.Move(testPlayerBlack, A4, A5)
 	assert.Equal(false, ok)
-	assert.Empty(e)
+	assert.NotNil(e)
 	// Move pawn
 	ok, e = testCaseGame.Move(testPlayerBlack, A7, A5)
 	assert.Equal(true, ok)
@@ -83,7 +83,7 @@ func TestMove(t *testing.T) {
 	// whitep tries to move black pawn
 	ok, e = testCaseGame.Move(testPlayerBlack, B7, B5)
 	assert.Equal(false, ok)
-	assert.Empty(e)
+	assert.NotNil(e)
 
 	// Testcase when movement eats a piece(white eats black)
 	testCaseGame, _ = testCaseGameGenerate()

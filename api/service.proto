@@ -43,4 +43,5 @@ message MoveRequest {
 message MoveResponse {
 	string status_code = 1;
 	string error = 2;
+	string board = 3;
 }

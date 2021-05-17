@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strconv"
 
 	"github.com/dumbogo/chess/engine"
 	"github.com/google/uuid"
@@ -77,7 +78,7 @@ type Game struct {
 	Movements     []Movement // TODO: this will cause problems
 	WhitePieces   pieces     `gorm:"type:jsonb;not null"`
 	BlackPieces   pieces     `gorm:"type:jsonb;not null"`
-	BoardSquares  squares    `gorm:"type:jsonb;not null"` // TODO: needs to change, not working, more info at line 79
+	BoardSquares  Squares    `gorm:"type:jsonb;not null"`
 }
 
 type pieces map[uint8]uint8
@@ -94,39 +95,68 @@ func (p *pieces) Scan(value interface{}) error {
 	return err
 }
 
-// =-----------------EXPERIMENTAL=======================
-type squares engine.Squares
+// Squares Game squares stored in Model
+type Squares map[engine.SquareIdentifier]Square
 
-// type square struct {
-// 	engine.Square
-// 	Piece piece `json:"piece"`
-// }
-//
-// type piece struct {
-// 	PieceIdentifier engine.PieceIdentifier `json:"piece_identifier"`
-// 	Color           Color                  `json:"color"`
-// }
+// Square square
+type Square struct {
+	engine.Square
+	Piece Piece
+}
 
-// Scan implements Scanner interface
-// TODO: Not decoding properly square.Piece property, returns error
-func (s *squares) Scan(value interface{}) error {
+// Piece piece
+type Piece struct {
+	PieceIdentifier engine.PieceIdentifier
+	Color           engine.Color
+}
+
+// Scan implement scanner intarface
+func (s *Squares) Scan(value interface{}) error {
 	bytes, ok := value.([]byte)
 	if !ok {
 		return errors.New(fmt.Sprint("Failed to unmarshal JSONB value:", value))
 	}
-	result := squares{}
+	var result map[string]interface{}
 	err := json.Unmarshal(bytes, &result) // returns not nil error
-	// json.Unmarshal(bytes, &result)
-	fmt.Printf("error: %+v\n", err)
-	// error: json: cannot unmarshal object into Go struct field Square.Piece of type engine.Piece
-	// *s = result
+	if err != nil {
+		return err
+	}
+
+	squares := make(Squares)
+
+	for i, v := range result {
+		idx, _ := strconv.Atoi(i)
+		mapV := v.(map[string]interface{})
+		squareid := mapV["SquareIdentifier"].(float64)
+		mapCoordinates := mapV["Coordinates"].(map[string]interface{})
+		xval, _ := mapCoordinates["X"].(float64)
+		yval, _ := mapCoordinates["Y"].(float64)
+		square := Square{
+			engine.Square{
+				Empty:            mapV["Empty"] == true,
+				SquareIdentifier: engine.SquareIdentifier(squareid),
+				Coordinates: engine.Coordinate{
+					X: uint8(xval),
+					Y: uint8(yval),
+				},
+			},
+			Piece{},
+		}
+		if !square.Empty {
+			pMap := mapV["Piece"].(map[string]interface{})
+			pieceid := pMap["PieceIdentifier"].(float64)
+			color := pMap["Color"].(float64)
+			square.Piece = Piece{
+				PieceIdentifier: engine.PieceIdentifier(pieceid),
+				Color:           engine.Color(color),
+			}
+		}
+		squares[engine.SquareIdentifier(idx)] = square
+	}
+
+	*s = squares
 	return nil
 }
-
-// Value return json value, implement driver.Valuer interface
-// func (s squares) Value() (driver.Value, error) {} // TODO: Implement
-
-// =-----------------END EXPERIMENTAL=======================
 
 // Player Model
 type Player struct {

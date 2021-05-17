@@ -112,7 +112,7 @@ func Move(conn *grpc.ClientConn, fromSquare, toSquare string) {
 		log.Fatalf("could not move piece: %v", err)
 	}
 
-	fmt.Printf("Moved piece, response :%v\n", r)
+	fmt.Printf("Board: \n:%s\n", r.GetBoard())
 }
 
 // JoinGame calls to gprc API JoinGame

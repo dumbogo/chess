@@ -26,17 +26,21 @@ type Server struct {
 	Db *gorm.DB
 }
 
-// StartGame starts a new game
-func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameRequest) (*StartGameResponse, error) {
-	accessToken, err := GetAccessTokenFromCtx(ctx)
-	if err != nil {
-		return nil, err
+func newGameWithoutPlayers(name string) Game {
+	engineSquares := engine.PristineSquares()
+	squares := make(Squares)
+	for i, v := range engineSquares {
+		sq := newBasicSquare(v)
+		if !sq.Empty {
+			sq.Piece = Piece{
+				PieceIdentifier: v.Piece.Identifier(),
+				Color:           v.Piece.Color(),
+			}
+		}
+		squares[i] = sq
 	}
-	user := GetUserFromAccessToken(accessToken)
-	// 1.----------
-
-	game := Game{
-		Name: startGameRequest.GetName(),
+	return Game{
+		Name: name,
 		BlackPieces: map[uint8]uint8{
 			uint8(engine.RookIdentifier):   2,
 			uint8(engine.KnightIdentifier): 2,
@@ -53,8 +57,21 @@ func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameReque
 			uint8(engine.KingIdentifier):   1,
 			uint8(engine.PawnIdentifier):   8,
 		},
-		BoardSquares: squares(engine.PristineSquares()),
+		BoardSquares: squares,
 	}
+}
+
+func newBasicSquare(e engine.Square) Square {
+	return Square{e, Piece{}}
+}
+
+// StartGame starts a new game
+func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameRequest) (*StartGameResponse, error) {
+	user, e := getUserFromCtx(ctx)
+	if e != nil {
+		return nil, e
+	}
+	game := newGameWithoutPlayers(startGameRequest.GetName())
 	switch startGameRequest.GetColor() {
 	case Color_WHITE:
 		p := Player{
@@ -84,14 +101,12 @@ func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameReque
 	return startGameResponse, nil
 }
 
-// JoinGame joins a game
+// JoinGame joins a game, depending of the white or black player space left, it will be assigned to the user joining
 func (s *Server) JoinGame(ctx context.Context, r *JoinGameRequest) (*JoinGameResponse, error) {
-	accessToken, err := GetAccessTokenFromCtx(ctx)
-	if err != nil {
-		return nil, err
+	user, e := getUserFromCtx(ctx)
+	if e != nil {
+		return nil, e
 	}
-	user := GetUserFromAccessToken(accessToken)
-
 	uuid := r.GetUuid()
 
 	var game Game
@@ -140,8 +155,131 @@ func (s *Server) JoinGame(ctx context.Context, r *JoinGameRequest) (*JoinGameRes
 }
 
 // Move Moves a player piece
-func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error) { // TODO: Implementation
-	panic("Pending implementation")
+func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error) {
+	user, e := getUserFromCtx(ctx)
+	if e != nil {
+		return nil, e
+	}
+	game := Game{}
+	tx := DBConn.Where("uuid=?", r.GetUuid()).Joins("join players on players.id = white_player_id").First(&game)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	whitePlayerDb := Player{}
+	tx = DBConn.Where("id=?", game.WhitePlayerID.Int32).First(&whitePlayerDb)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	blackPlayerDb := Player{}
+	tx = DBConn.Where("id=?", game.BlackPlayerID.Int32).First(&blackPlayerDb)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	if uint(game.Turn) == whitePlayerDb.ID {
+		if user.ID != whitePlayerDb.UserID {
+			return nil, errors.New("not your turn")
+		}
+	}
+
+	nextTurn := uint(whitePlayerDb.ID)
+	turnPlayer := engine.Player{
+		Color: engine.WhiteColor,
+	}
+	if uint(game.Turn) == whitePlayerDb.ID {
+		nextTurn = uint(blackPlayerDb.ID)
+		turnPlayer.Color = engine.WhiteColor
+	} else {
+		turnPlayer.Color = engine.BlackColor
+	}
+	whitePlayer := engine.Player{Color: engine.WhiteColor}
+	blackPlayer := engine.Player{Color: engine.BlackColor}
+
+	squares := engine.Squares{}
+	for i, v := range game.BoardSquares {
+		sq := engine.Square{
+			Empty:            v.Empty,
+			Coordinates:      v.Coordinates,
+			SquareIdentifier: v.SquareIdentifier,
+		}
+		if !v.Empty {
+			sq.Piece = engine.PieceFromPieceIdentifier(v.Piece.PieceIdentifier, v.Piece.Color)
+		}
+		squares[i] = sq
+	}
+	board := engine.LoadBoard(&whitePlayer, &blackPlayer, squares)
+	whitePieces := engine.PiecesList{}
+	for i, v := range game.WhitePieces {
+		whitePieces[engine.PieceIdentifier(i)] = v
+	}
+	blackPieces := engine.PiecesList{}
+	for i, v := range game.BlackPieces {
+		blackPieces[engine.PieceIdentifier(i)] = v
+	}
+
+	gameEngine, e := engine.LoadGame(
+		game.Name,
+		board,
+		turnPlayer,
+		whitePlayer,
+		blackPlayer,
+		whitePieces,
+		blackPieces,
+		make([]engine.Movement, 0), // Movements, leaving emtpy ATM
+	)
+	if e != nil {
+		return nil, e
+	}
+
+	from, ok := engine.StringToSquareIdentifier(r.GetFromSquare())
+	if !ok {
+		return nil, errors.New("Someerr")
+	}
+	to, ok := engine.StringToSquareIdentifier(r.GetToSquare())
+	if !ok {
+		return nil, errors.New("Someerr")
+	}
+	ok, e = gameEngine.Move(
+		turnPlayer,
+		from,
+		to,
+	)
+	if !ok {
+		return nil, e
+	}
+
+	// Update values on gameDB
+	game.Turn = nextTurn
+	newBlackPieces := pieces{}
+	for i, v := range gameEngine.BlackPieces() {
+		newBlackPieces[uint8(i)] = v
+	}
+	game.BlackPieces = newBlackPieces
+
+	newWhitePieces := pieces{}
+	for i, v := range gameEngine.WhitePieces() {
+		newWhitePieces[uint8(i)] = v
+	}
+	game.WhitePieces = newWhitePieces
+
+	newSquares := Squares{}
+	for i, v := range gameEngine.Board().Squares() {
+		sq := newBasicSquare(v)
+		if !sq.Empty {
+			sq.Piece = Piece{
+				PieceIdentifier: v.Piece.Identifier(),
+				Color:           v.Piece.Color(),
+			}
+		}
+		newSquares[i] = sq
+	}
+	game.BoardSquares = newSquares
+	tx = DBConn.Save(&game)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+	return &MoveResponse{
+		Board: gameEngine.Board().String(),
+	}, nil
 }
 
 // EnsureValidToken ensures a valid token exists within a request's metadata. If
@@ -184,4 +322,13 @@ func GetAccessTokenFromCtx(ctx context.Context) (string, error) {
 	authorization := md["authorization"]
 	accessToken := strings.TrimPrefix(authorization[0], "Bearer ")
 	return accessToken, nil
+}
+
+func getUserFromCtx(ctx context.Context) (User, error) {
+	t, e := GetAccessTokenFromCtx(ctx)
+	if e != nil {
+		return User{}, e
+	}
+	user := GetUserFromAccessToken(t)
+	return user, nil
 }

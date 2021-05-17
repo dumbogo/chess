@@ -18,7 +18,6 @@ type Board interface {
 
 type board struct {
 	whitePlayer *Player
-
 	blackPlayer *Player
 	squares     Squares
 }
@@ -31,6 +30,15 @@ func NewBoard(whitePlayer, blackPlayer *Player) Board {
 	}
 	board.fillSquares()
 	return &board
+}
+
+// LoadBoard loads board
+func LoadBoard(whitePlayer, blackPlayer *Player, squares Squares) Board {
+	return &board{
+		blackPlayer: blackPlayer,
+		whitePlayer: whitePlayer,
+		squares:     squares,
+	}
 }
 
 func (b *board) WhitePlayer() *Player {
@@ -203,5 +211,4 @@ func PristineSquares() Squares {
 		G6: Square{Empty: true, Coordinates: Coordinate{6, 5}, SquareIdentifier: G6},
 		H6: Square{Empty: true, Coordinates: Coordinate{7, 5}, SquareIdentifier: H6},
 	}
-
 }
