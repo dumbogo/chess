@@ -58,7 +58,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	// Ends todo
 
 	user, err := gothic.CompleteUserAuth(w, r)
-	fmt.Fprintf(w, "<p>User token, copy to clipboard, be carefull with spaces!!!: <b>%s</b></p>", user.AccessToken)
+	fmt.Fprintf(w, "<p>User token, copy to clipboard, be careful with spaces!!!: <b>%s</b></p>", user.AccessToken)
 	if err != nil {
 		panic(err)
 	}

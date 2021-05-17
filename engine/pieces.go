@@ -387,7 +387,7 @@ func (p *pawn) String() string {
 	return "BP"
 }
 
-// PieceFromPieceIdentifier returns the corresponding Piece asociated to PieceIdentifier
+// PieceFromPieceIdentifier returns the corresponding Piece associated to PieceIdentifier
 func PieceFromPieceIdentifier(i PieceIdentifier, color Color) Piece {
 	switch i {
 	case PawnIdentifier:

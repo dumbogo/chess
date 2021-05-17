@@ -224,7 +224,7 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 		blackPlayer,
 		whitePieces,
 		blackPieces,
-		make([]engine.Movement, 0), // Movements, leaving emtpy ATM
+		make([]engine.Movement, 0), // Movements, leaving empty ATM
 	)
 	if e != nil {
 		return nil, e
