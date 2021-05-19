@@ -175,13 +175,14 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+	// Validate turn
 	if uint(game.Turn) == whitePlayerDb.ID {
 		if user.ID != whitePlayerDb.UserID {
 			return nil, errors.New("not your turn")
 		}
 	}
-
 	nextTurn := uint(whitePlayerDb.ID)
+
 	turnPlayer := engine.Player{
 		Color: engine.WhiteColor,
 	}
@@ -191,22 +192,10 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 	} else {
 		turnPlayer.Color = engine.BlackColor
 	}
+
 	whitePlayer := engine.Player{Color: engine.WhiteColor}
 	blackPlayer := engine.Player{Color: engine.BlackColor}
-
-	squares := engine.Squares{}
-	for i, v := range game.BoardSquares {
-		sq := engine.Square{
-			Empty:            v.Empty,
-			Coordinates:      v.Coordinates,
-			SquareIdentifier: v.SquareIdentifier,
-		}
-		if !v.Empty {
-			sq.Piece = engine.PieceFromPieceIdentifier(v.Piece.PieceIdentifier, v.Piece.Color)
-		}
-		squares[i] = sq
-	}
-	board := engine.LoadBoard(&whitePlayer, &blackPlayer, squares)
+	board := engine.LoadBoard(&whitePlayer, &blackPlayer, squaresToEngineSquares(game.BoardSquares))
 	whitePieces := engine.PiecesList{}
 	for i, v := range game.WhitePieces {
 		whitePieces[engine.PieceIdentifier(i)] = v
@@ -260,19 +249,7 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 		newWhitePieces[uint8(i)] = v
 	}
 	game.WhitePieces = newWhitePieces
-
-	newSquares := Squares{}
-	for i, v := range gameEngine.Board().Squares() {
-		sq := newBasicSquare(v)
-		if !sq.Empty {
-			sq.Piece = Piece{
-				PieceIdentifier: v.Piece.Identifier(),
-				Color:           v.Piece.Color(),
-			}
-		}
-		newSquares[i] = sq
-	}
-	game.BoardSquares = newSquares
+	game.BoardSquares = engineSquaresToSquares(gameEngine.Board().Squares())
 	tx = DBConn.Save(&game)
 	if tx.Error != nil {
 		return nil, tx.Error
@@ -331,4 +308,35 @@ func getUserFromCtx(ctx context.Context) (User, error) {
 	}
 	user := GetUserFromAccessToken(t)
 	return user, nil
+}
+
+func squaresToEngineSquares(bs Squares) engine.Squares {
+	squares := engine.Squares{}
+	for i, v := range bs {
+		sq := engine.Square{
+			Empty:            v.Empty,
+			Coordinates:      v.Coordinates,
+			SquareIdentifier: v.SquareIdentifier,
+		}
+		if !v.Empty {
+			sq.Piece = engine.PieceFromPieceIdentifier(v.Piece.PieceIdentifier, v.Piece.Color)
+		}
+		squares[i] = sq
+	}
+	return squares
+}
+
+func engineSquaresToSquares(es engine.Squares) Squares {
+	newSquares := Squares{}
+	for i, v := range es {
+		sq := newBasicSquare(v)
+		if !sq.Empty {
+			sq.Piece = Piece{
+				PieceIdentifier: v.Piece.Identifier(),
+				Color:           v.Piece.Color(),
+			}
+		}
+		newSquares[i] = sq
+	}
+	return newSquares
 }

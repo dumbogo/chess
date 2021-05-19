@@ -31,16 +31,12 @@ type ConfigHTTPRouter struct {
 	Env string
 }
 
-// InitHTTPRouter initializes HTTPHandler
+// InitHTTPRouter initializes HTTPHandler, create mux Handler and define HTTTP routes
 func InitHTTPRouter(c ConfigHTTPRouter) {
-	// TODO: Refactor
 	HTTPRouter = mux.NewRouter()
 	HTTPRouter.HandleFunc("/auth/{provider}/callback", callbackHandler)
 	HTTPRouter.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler)
-	HTTPRouter.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "<p><a href='/auth/github?provider=github'>Click to log in with github</a></p>")
-	})
-
+	HTTPRouter.HandleFunc("/", rootHandler)
 	provierCallbackURL := fmt.Sprintf("%s://%s/auth/github/callback?provider=github", c.URLLoc.Scheme, c.URLLoc.Host)
 	goth.UseProviders(
 		github.New(c.GithubKey, c.GithubSecret, provierCallbackURL),
@@ -49,6 +45,10 @@ func InitHTTPRouter(c ConfigHTTPRouter) {
 		return r.URL.Query().Get("state")
 	}
 	initGothicStore(c.SessionKey, c.Env)
+}
+
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "<p><a href='/auth/github?provider=github'>Click to log in with github</a></p>")
 }
 
 func callbackHandler(w http.ResponseWriter, r *http.Request) {
