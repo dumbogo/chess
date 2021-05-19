@@ -31,7 +31,7 @@ var (
 
 	configName = "config"
 	configType = "toml"
-	configPath = "$HOME/.chess"
+	configPath = "~/.chess"
 )
 
 func init() {
