@@ -44,12 +44,13 @@ func Migrate() error {
 // User Model
 type User struct {
 	gorm.Model
-	Email             string `gorm:"unique"`
-	Name              string
-	FirstName         string
-	LastName          string
-	NickName          string
-	UserID            string
+	Email     string `gorm:"unique"`
+	Name      string
+	FirstName string
+	LastName  string
+	NickName  string
+	UserID    string
+	// TODO: hash AccessToken, AccessTokenSecret, RefreshToken
 	AccessToken       string
 	AccessTokenSecret string
 	RefreshToken      string
@@ -59,6 +60,7 @@ type User struct {
 
 // GetUserFromAccessToken returns user from database with accesstoken set
 func GetUserFromAccessToken(accessToken string) User {
+	// TODO: Salt AccessToken
 	user := User{}
 	DBConn.Where("access_token=?", accessToken).First(&user)
 	return user
@@ -75,7 +77,7 @@ type Game struct {
 	BlackPlayerID sql.NullInt32
 	Turn          uint
 	Winner        int
-	Movements     []Movement // TODO: this will cause problems
+	Movements     []Movement // TODO: this will cause problems, implement when its needed by the engine
 	WhitePieces   pieces     `gorm:"type:jsonb;not null"`
 	BlackPieces   pieces     `gorm:"type:jsonb;not null"`
 	BoardSquares  Squares    `gorm:"type:jsonb;not null"`
@@ -102,6 +104,37 @@ type Squares map[engine.SquareIdentifier]Square
 type Square struct {
 	engine.Square
 	Piece Piece
+}
+
+func squaresToEngineSquares(bs Squares) engine.Squares {
+	squares := engine.Squares{}
+	for i, v := range bs {
+		sq := engine.Square{
+			Empty:            v.Empty,
+			Coordinates:      v.Coordinates,
+			SquareIdentifier: v.SquareIdentifier,
+		}
+		if !v.Empty {
+			sq.Piece = engine.PieceFromPieceIdentifier(v.Piece.PieceIdentifier, v.Piece.Color)
+		}
+		squares[i] = sq
+	}
+	return squares
+}
+
+func engineSquaresToSquares(es engine.Squares) Squares {
+	newSquares := Squares{}
+	for i, v := range es {
+		sq := newBasicSquare(v)
+		if !sq.Empty {
+			sq.Piece = Piece{
+				PieceIdentifier: v.Piece.Identifier(),
+				Color:           v.Piece.Color(),
+			}
+		}
+		newSquares[i] = sq
+	}
+	return newSquares
 }
 
 // Piece piece

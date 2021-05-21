@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
+	"path"
 	"time"
 
 	pb "github.com/dumbogo/chess/api"
@@ -31,7 +33,8 @@ var (
 
 	configName = "config"
 	configType = "toml"
-	configPath = "~/.chess"
+	// configPath loaded dinamically
+	configPath = ".chess"
 )
 
 func init() {
@@ -41,10 +44,19 @@ func init() {
 func initConfig() {
 	viper.SetConfigName(configName)
 	viper.SetConfigType(configType)
+
+	var (
+		homeDir string
+		err     error
+	)
+	if homeDir, err = os.UserHomeDir(); err != nil {
+		panic(fmt.Errorf("home directory not found %v", err))
+	}
+	configPath := path.Join(homeDir, configPath)
 	viper.AddConfigPath(configPath)
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatalf("Config file not found, please add a config file on $HOME/.chess directory")
+			log.Fatalf("Config file not found, please add a config file on %s directory", configPath)
 		} else {
 			panic(err)
 		}

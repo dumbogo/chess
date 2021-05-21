@@ -39,7 +39,7 @@ func InitHTTPRouter(c ConfigHTTPRouter) {
 	HTTPRouter.HandleFunc("/", rootHandler)
 	provierCallbackURL := fmt.Sprintf("%s://%s/auth/github/callback?provider=github", c.URLLoc.Scheme, c.URLLoc.Host)
 	goth.UseProviders(
-		github.New(c.GithubKey, c.GithubSecret, provierCallbackURL),
+		github.New(c.GithubKey, c.GithubSecret, provierCallbackURL, "user:email"),
 	)
 	gothic.GetState = func(r *http.Request) string {
 		return r.URL.Query().Get("state")

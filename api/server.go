@@ -160,103 +160,108 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 	if e != nil {
 		return nil, e
 	}
-	game := Game{}
-	tx := DBConn.Where("uuid=?", r.GetUuid()).Joins("join players on players.id = white_player_id").First(&game)
+	// Extract game and players from db
+	// TODO: gorm joins func is not working as expected, review
+	gameDb := Game{}
+	tx := DBConn.Where("uuid=?", r.GetUuid()).Joins("join players on players.id = white_player_id").First(&gameDb)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	whitePlayerDb := Player{}
-	tx = DBConn.Where("id=?", game.WhitePlayerID.Int32).First(&whitePlayerDb)
+	tx = DBConn.Where("id=?", gameDb.WhitePlayerID.Int32).First(&whitePlayerDb)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
 	blackPlayerDb := Player{}
-	tx = DBConn.Where("id=?", game.BlackPlayerID.Int32).First(&blackPlayerDb)
+	tx = DBConn.Where("id=?", gameDb.BlackPlayerID.Int32).First(&blackPlayerDb)
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+
 	// Validate turn
-	if uint(game.Turn) == whitePlayerDb.ID {
+	if uint(gameDb.Turn) == whitePlayerDb.ID {
 		if user.ID != whitePlayerDb.UserID {
 			return nil, errors.New("not your turn")
 		}
 	}
 	nextTurn := uint(whitePlayerDb.ID)
-
 	turnPlayer := engine.Player{
 		Color: engine.WhiteColor,
 	}
-	if uint(game.Turn) == whitePlayerDb.ID {
+	if uint(gameDb.Turn) == whitePlayerDb.ID {
 		nextTurn = uint(blackPlayerDb.ID)
 		turnPlayer.Color = engine.WhiteColor
 	} else {
 		turnPlayer.Color = engine.BlackColor
 	}
 
+	gameEngine, err := loadEngineGameFromDbValues(gameDb, turnPlayer)
+	if err != nil {
+		return nil, err
+	}
+
+	from, ok := engine.StringToSquareIdentifier(strings.ToUpper(r.GetFromSquare()))
+	if !ok {
+		return nil, errors.New("Invalid square identifier")
+	}
+	to, ok := engine.StringToSquareIdentifier(strings.ToUpper(r.GetToSquare()))
+	if !ok {
+		return nil, errors.New("Invalid square identifier")
+	}
+	if ok, e = gameEngine.Move(turnPlayer, from, to); !ok {
+		return nil, e
+	}
+
+	gameDb.Turn = nextTurn
+	if err := updateGameValuesFromGameEngine(&gameDb, gameEngine); err != nil {
+		return nil, err
+	}
+	return &MoveResponse{
+		Board: gameEngine.Board().String(),
+	}, nil
+}
+
+func loadEngineGameFromDbValues(gameDb Game, turn engine.Player) (engine.Game, error) {
 	whitePlayer := engine.Player{Color: engine.WhiteColor}
 	blackPlayer := engine.Player{Color: engine.BlackColor}
-	board := engine.LoadBoard(&whitePlayer, &blackPlayer, squaresToEngineSquares(game.BoardSquares))
+	board := engine.LoadBoard(&whitePlayer, &blackPlayer, squaresToEngineSquares(gameDb.BoardSquares))
 	whitePieces := engine.PiecesList{}
-	for i, v := range game.WhitePieces {
+	for i, v := range gameDb.WhitePieces {
 		whitePieces[engine.PieceIdentifier(i)] = v
 	}
 	blackPieces := engine.PiecesList{}
-	for i, v := range game.BlackPieces {
+	for i, v := range gameDb.BlackPieces {
 		blackPieces[engine.PieceIdentifier(i)] = v
 	}
 
-	gameEngine, e := engine.LoadGame(
-		game.Name,
+	return engine.LoadGame(
+		gameDb.Name,
 		board,
-		turnPlayer,
+		turn,
 		whitePlayer,
 		blackPlayer,
 		whitePieces,
 		blackPieces,
 		make([]engine.Movement, 0), // Movements, leaving empty ATM
 	)
-	if e != nil {
-		return nil, e
-	}
+}
 
-	from, ok := engine.StringToSquareIdentifier(r.GetFromSquare())
-	if !ok {
-		return nil, errors.New("Someerr")
-	}
-	to, ok := engine.StringToSquareIdentifier(r.GetToSquare())
-	if !ok {
-		return nil, errors.New("Someerr")
-	}
-	ok, e = gameEngine.Move(
-		turnPlayer,
-		from,
-		to,
-	)
-	if !ok {
-		return nil, e
-	}
-
-	// Update values on gameDB
-	game.Turn = nextTurn
-	newBlackPieces := pieces{}
+func updateGameValuesFromGameEngine(gameDb *Game, gameEngine engine.Game) error {
+	newBlackPiecesDb := pieces{}
 	for i, v := range gameEngine.BlackPieces() {
-		newBlackPieces[uint8(i)] = v
+		newBlackPiecesDb[uint8(i)] = v
 	}
-	game.BlackPieces = newBlackPieces
-
-	newWhitePieces := pieces{}
+	gameDb.BlackPieces = newBlackPiecesDb
+	newWhitePiecesDb := pieces{}
 	for i, v := range gameEngine.WhitePieces() {
-		newWhitePieces[uint8(i)] = v
+		newWhitePiecesDb[uint8(i)] = v
 	}
-	game.WhitePieces = newWhitePieces
-	game.BoardSquares = engineSquaresToSquares(gameEngine.Board().Squares())
-	tx = DBConn.Save(&game)
-	if tx.Error != nil {
-		return nil, tx.Error
+	gameDb.WhitePieces = newWhitePiecesDb
+	gameDb.BoardSquares = engineSquaresToSquares(gameEngine.Board().Squares())
+	if tx := DBConn.Save(&gameDb); tx.Error != nil {
+		return tx.Error
 	}
-	return &MoveResponse{
-		Board: gameEngine.Board().String(),
-	}, nil
+	return nil
 }
 
 // EnsureValidToken ensures a valid token exists within a request's metadata. If
@@ -308,35 +313,4 @@ func getUserFromCtx(ctx context.Context) (User, error) {
 	}
 	user := GetUserFromAccessToken(t)
 	return user, nil
-}
-
-func squaresToEngineSquares(bs Squares) engine.Squares {
-	squares := engine.Squares{}
-	for i, v := range bs {
-		sq := engine.Square{
-			Empty:            v.Empty,
-			Coordinates:      v.Coordinates,
-			SquareIdentifier: v.SquareIdentifier,
-		}
-		if !v.Empty {
-			sq.Piece = engine.PieceFromPieceIdentifier(v.Piece.PieceIdentifier, v.Piece.Color)
-		}
-		squares[i] = sq
-	}
-	return squares
-}
-
-func engineSquaresToSquares(es engine.Squares) Squares {
-	newSquares := Squares{}
-	for i, v := range es {
-		sq := newBasicSquare(v)
-		if !sq.Empty {
-			sq.Piece = Piece{
-				PieceIdentifier: v.Piece.Identifier(),
-				Color:           v.Piece.Color(),
-			}
-		}
-		newSquares[i] = sq
-	}
-	return newSquares
 }
