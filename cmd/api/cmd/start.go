@@ -50,11 +50,12 @@ var (
 )
 
 func init() {
-	cobra.OnInitialize(initConfig)
 	rootCmd.AddCommand(startCmd)
-	startCmd.Flags().StringVarP(&configFile, "config", "c", "", "TOML configuration file to start API server")
-	startCmd.MarkFlagRequired("config")
-
+	cobra.OnInitialize(initConfig)
+	startCmd.Flags().StringVarP(&configFile, "config", "c", "", "TOML configuration file to start API server (required)")
+	if err := startCmd.MarkFlagRequired("config"); err != nil {
+		panic(err)
+	}
 }
 
 func initConfig() {
@@ -66,7 +67,9 @@ func initConfig() {
 	v.AddConfigPath(filepath.Dir(configFile))
 	if err := v.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatalf("could not load file %s, please provide a valid one", configFile)
+			if configFile != "" {
+				log.Fatalf("could not load file %s, please provide a valid one", configFile)
+			}
 		} else {
 			panic(err)
 		}
