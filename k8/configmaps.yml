@@ -1,0 +1,22 @@
+---
+# TODO: change server.toml.HTTP_server.Host accordingly
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chess-conf
+data:
+  database_name: "chess_api"  # Must be same as server.toml.Database.db_name
+  server.toml: |
+    ENV="development"
+    [API]
+    port = ":8000"
+    server_cert = "/opt/data/x509/server_cert.pem"
+    server_key = "/opt/data/x509/server_key.pem"
+    [Database]
+    host = "postgresql"
+    port = "5432"
+    db_name = "chess_api"
+    [HTTP_server]
+    Scheme = "http"
+    Host = "dev.aguileraglz.xyz"
+    Port = ":8080"

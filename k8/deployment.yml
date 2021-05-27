@@ -1,0 +1,78 @@
+---
+# chessapi
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: chess-deployment
+  labels:
+    app: chess
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: chess
+  template:
+    metadata:
+      labels:
+        app: chess
+    spec:
+      initContainers:
+        - name: chess-dbmigrations
+          image: dumbogo/chess
+          command: ["./chessapi"]
+          args: ["migrate", "-c", "/opt/data/chessapi/server.toml"]
+          volumeMounts:
+            - name: tlscerts
+              mountPath: "opt/data/x509"
+            - name: config
+              mountPath: "/opt/data/chessapi"
+          env:
+            - name: CHESS_API_DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresqlcreds
+                  key: username
+            - name: CHESS_API_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresqlcreds
+                  key: password
+      containers:
+        - name: chess
+          image: dumbogo/chess
+          command: ["./chessapi"]
+          args: ["start", "-c", "/opt/data/chessapi/server.toml"]
+          ports:
+            - containerPort: 8000  # grpc
+            - containerPort: 8080  # http
+          volumeMounts:
+            - name: tlscerts
+              mountPath: "opt/data/x509"
+            - name: config
+              mountPath: "/opt/data/chessapi"
+          env:
+            - name: CHESS_API_DATABASE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: postgresqlcreds
+                  key: username
+            - name: CHESS_API_DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgresqlcreds
+                  key: password
+      volumes:
+        - name: tlscerts
+          secret:
+            secretName: grpccerts
+            items:
+              - key: tls.crt
+                path: server_cert.pem
+              - key: tls.key
+                path: server_key.pem
+        - name: config
+          configMap:
+            name: chess-conf
+            items:
+              - key: "server.toml"
+                path: "server.toml"
