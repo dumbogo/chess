@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/golang/mock/gomock"
+	gomock "github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -59,8 +59,10 @@ func TestTurn(t *testing.T) {
 }
 
 func TestMove(t *testing.T) {
+	var testCaseGame Game
 	assert := assert.New(t)
-	testCaseGame, _ := testCaseGameGenerate()
+
+	testCaseGame, _ = testCaseGameGenerate()
 	ok, e := testCaseGame.Move(testPlayerWhite, A2, A3)
 	assert.Equal(true, ok)
 	assert.Empty(e)
@@ -85,43 +87,32 @@ func TestMove(t *testing.T) {
 	assert.Equal(false, ok)
 	assert.NotNil(e)
 
-	// Testcase when movement eats a piece(white eats black)
+	// Testcase when movement eats a piece, white pawn eats black pawn
 	testCaseGame, _ = testCaseGameGenerate()
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
-	p1 := NewMockPiece(ctrl)
-	p2 := NewMockPiece(ctrl)
-	p1.
-		EXPECT().
-		Color().
-		Return(WhiteColor)
-	p2.
-		EXPECT().
-		Color().
-		Return(BlackColor)
-	p2.
-		EXPECT().
-		Identifier().
-		Return(PawnIdentifier)
-
-	square1 := Square{
+	c3whitePawnSquare := Square{
 		Empty:            false,
-		Piece:            p1,
-		SquareIdentifier: H4,
+		Piece:            NewPawn(WhiteColor),
+		SquareIdentifier: C3,
+		Coordinates: Coordinate{
+			X: 3,
+			Y: 2,
+		},
 	}
-	square2 := Square{
+	d4blackPawnSquare := Square{
 		Empty:            false,
-		Piece:            p2,
-		SquareIdentifier: H5,
+		Piece:            NewPawn(BlackColor),
+		SquareIdentifier: D4,
+		Coordinates: Coordinate{
+			X: 4,
+			Y: 3,
+		},
 	}
-	p1.
-		EXPECT().
-		CanMove(testCaseGame.Board(), testCaseGame.Movements(), square1, square2).
-		Return(true)
 
-	testCaseGame.Board().Squares()[H4] = square1
-	testCaseGame.Board().Squares()[H5] = square2
-	ok, err := testCaseGame.Move(testPlayerBlack, H4, H5)
+	testCaseGame.Board().Squares()[C3] = c3whitePawnSquare
+	testCaseGame.Board().Squares()[D4] = d4blackPawnSquare
+	ok, err := testCaseGame.Move(testPlayerWhite, C3, D4)
 	assert.True(ok)
 	assert.Empty(err)
 }
@@ -141,12 +132,69 @@ func TestIsCheckmateBy(t *testing.T) {
 
 	no := game.IsCheckmateBy(Joel)
 	assert.False(no)
-
 	game.Move(Luis, F7, F5)
 	game.Move(Joel, D1, H5)
-
 	yes := game.IsCheckmateBy(Joel)
 	assert.True(yes)
+
+	ok, err := game.Move(Luis, C7, C6)
+	assert.False(ok)
+	assert.Error(err)
+}
+
+func TestIsCheck(t *testing.T) {
+	assert := assert.New(t)
+
+	Joel := Player{"Joel", WhiteColor}
+	Luis := Player{"Luis", BlackColor}
+	game, e := NewGame("rapid check", Luis, Joel)
+	assert.Nil(e)
+
+	game.Move(Joel, D2, D4)
+	game.Move(Luis, E7, E5)
+	game.Move(Joel, D1, D3)
+	game.Move(Luis, A7, A6)
+	game.Move(Joel, D3, E3)
+	game.Move(Luis, A6, A5)
+	game.Move(Joel, E3, E5)
+	ok, _ := game.Move(Luis, A5, A4)
+	assert.False(ok)
+	game.Move(Luis, F8, E7)
+	t.Skip()
+	// assert.True(ok)
+}
+
+func TestRollback(t *testing.T) {
+	assert := assert.New(t)
+	Joel := Player{"Joel", WhiteColor}
+	Luis := Player{"Luis", BlackColor}
+	game, e := NewGame("rapid check", Luis, Joel)
+	assert.Nil(e)
+
+	game.Move(Joel, D2, D4)
+	game.Move(Luis, E7, E5)
+	game.Rollback(1)
+	assert.Equal(1, len(game.Movements()))
+	assert.EqualValues(
+		Square{
+			Empty:            true,
+			Piece:            nil,
+			Coordinates:      SquareIdentifierToCoordinate(E5),
+			SquareIdentifier: E5,
+		},
+		game.Board().Squares()[E5],
+	)
+
+	assert.EqualValues(
+		Square{
+			Empty:            false,
+			Piece:            NewPawn(BlackColor),
+			Coordinates:      SquareIdentifierToCoordinate(E7),
+			SquareIdentifier: E7,
+		},
+		game.Board().Squares()[E7],
+	)
+	assert.EqualValues(Luis, game.Turn())
 }
 
 func TestBoard(t *testing.T) {

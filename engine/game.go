@@ -23,12 +23,15 @@ type Movement struct {
 	To         SquareIdentifier
 }
 
+// PiecesList is a map of pieces, each value contains number of pieces left in board
+type PiecesList map[PieceIdentifier]uint8
+
 // Game playable game
 type Game interface {
-	// Turn returns player turn
-	Turn() Player
 	// Move moves a piece in the Board, returns true if moved
 	Move(player Player, from, to SquareIdentifier) (bool, error)
+	// Turn returns player turn
+	Turn() Player
 	// IsCheckBy returns true if Player makes check
 	IsCheckBy(Player) bool
 	// IsCheckmateBy returns true if Player makes checkmate
@@ -37,11 +40,13 @@ type Game interface {
 	Board() Board
 	// Movements get all historic movements
 	Movements() []Movement
-
-	String() string
+	// Rollback returns to a previous stage, weight means how many steps back
+	Rollback(weight int)
 
 	WhitePieces() PiecesList
 	BlackPieces() PiecesList
+
+	String() string
 }
 
 type game struct {
@@ -111,19 +116,13 @@ func LoadGame(
 	}, nil
 }
 
-func (g *game) Turn() Player {
-	return g.turn
-}
-
-func (g *game) WhitePieces() PiecesList {
-	return g.whitePieces
-}
-
-func (g *game) BlackPieces() PiecesList {
-	return g.blackPieces
-}
-
 func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
+	if g.IsCheckmateBy(g.white) {
+		return false, errors.New("checkmate, winner is white")
+	}
+	if g.IsCheckmateBy(g.black) {
+		return false, errors.New("checkmate, winner is black")
+	}
 	squareFrom := g.board.Squares()[from]
 	squareTo := g.board.Squares()[to]
 	if squareFrom.Empty {
@@ -142,8 +141,7 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 
 	var pieceEaten Piece
 	if !squareTo.Empty {
-		pieceEaten = squareTo.Piece
-		g.board.EatPiece(to)
+		pieceEaten = g.board.EatPiece(to)
 		g.removePiecePlayer(pieceEaten)
 	}
 
@@ -153,7 +151,6 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 	squareFrom.Empty = true
 	g.board.Squares()[to] = squareTo
 	g.board.Squares()[from] = squareFrom
-	g.changeTurn()
 	g.movements = append(g.movements, Movement{
 		Player:     player,
 		PieceMoved: pieceToMove,
@@ -161,11 +158,16 @@ func (g *game) Move(player Player, from, to SquareIdentifier) (bool, error) {
 		From:       from,
 		To:         to,
 	})
+	g.changeTurn()
+	if g.IsCheckBy(g.Turn()) {
+		g.Rollback(1)
+		return false, errors.New("check")
+	}
 	return true, nil
 }
 
-func (g *game) Movements() []Movement {
-	return g.movements
+func (g *game) Turn() Player {
+	return g.turn
 }
 
 func (g *game) IsCheckBy(player Player) bool {
@@ -204,11 +206,53 @@ func (g *game) IsCheckmateBy(player Player) bool {
 			}
 		}
 	}
+	// TODO: review if any piece player can block the check
+	// we probably want to have all pieces making check
 	return true
 }
 
 func (g *game) Board() Board {
 	return g.board
+}
+
+func (g *game) Movements() []Movement {
+	return g.movements
+}
+
+func (g *game) Rollback(w int) {
+	for i := 1; i <= w; i++ {
+		lastMovement := g.movements[len(g.movements)-1]
+		squareFrom := Square{
+			Empty:            false,
+			Piece:            lastMovement.PieceMoved,
+			Coordinates:      SquareIdentifierToCoordinate(lastMovement.From),
+			SquareIdentifier: lastMovement.From,
+		}
+
+		squareTo := Square{
+			Piece:            lastMovement.PieceEaten,
+			Coordinates:      SquareIdentifierToCoordinate(lastMovement.To),
+			SquareIdentifier: lastMovement.To,
+		}
+
+		if squareTo.Piece == nil {
+			squareTo.Empty = true
+		} else {
+			g.addPiecePlayer(squareTo.Piece)
+		}
+		g.board.Squares()[lastMovement.To] = squareTo
+		g.board.Squares()[lastMovement.From] = squareFrom
+		g.movements = g.movements[:len(g.movements)-1]
+		g.changeTurn()
+	}
+}
+
+func (g *game) WhitePieces() PiecesList {
+	return g.whitePieces
+}
+
+func (g *game) BlackPieces() PiecesList {
+	return g.blackPieces
 }
 
 // String returns ASCII representation of the game
@@ -234,6 +278,16 @@ func (g *game) removePiecePlayer(p Piece) {
 	}
 }
 
+func (g *game) addPiecePlayer(p Piece) {
+	color := p.Color()
+	switch color {
+	case BlackColor:
+		g.blackPieces[p.Identifier()]++
+	case WhiteColor:
+		g.whitePieces[p.Identifier()]++
+	}
+}
+
 func getKingSquare(board Board, color Color) Square {
 	var kingSquare Square
 	for _, square := range board.Squares() {
@@ -245,5 +299,9 @@ func getKingSquare(board Board, color Color) Square {
 	return kingSquare
 }
 
-// PiecesList is a map of pieces, each value contains number of pieces left in board
-type PiecesList map[PieceIdentifier]uint8
+func (g *game) oponentTurn() Player { // TODO: still needs test
+	if g.Turn() == g.white {
+		return g.black
+	}
+	return g.white
+}

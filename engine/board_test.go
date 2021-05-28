@@ -71,10 +71,35 @@ func TestEatPiece(t *testing.T) {
 	assert.Empty(square.Piece)
 }
 
+func TestFillSquare(t *testing.T) {
+	assert := assert.New(t)
+	board := testableBoard()
+	whitePawn := NewPawn(WhiteColor)
+	board.FillSquare(D5, whitePawn)
+	square := board.Squares()[D5]
+	assert.EqualValues(
+		Square{
+			Empty:            false,
+			Piece:            whitePawn,
+			Coordinates:      Coordinate{3, 4},
+			SquareIdentifier: D5,
+		},
+		square,
+	)
+}
+
 func TestCoordinateToSquareIdentifier(t *testing.T) {
 	assert := assert.New(t)
 	assert.Equal(A1, CoordinateToSquareIdentifier(Coordinate{0, 0}))
 	assert.Equal(H2, CoordinateToSquareIdentifier(Coordinate{7, 1}))
 	assert.Equal(H6, CoordinateToSquareIdentifier(Coordinate{7, 5}))
 	assert.Equal(H8, CoordinateToSquareIdentifier(Coordinate{7, 7}))
+}
+
+func TestSquareIdentifierToCoordinate(t *testing.T) {
+	assert := assert.New(t)
+	assert.Equal(Coordinate{0, 0}, SquareIdentifierToCoordinate(A1))
+	assert.Equal(Coordinate{7, 1}, SquareIdentifierToCoordinate(H2))
+	assert.Equal(Coordinate{7, 5}, SquareIdentifierToCoordinate(H6))
+	assert.Equal(Coordinate{7, 7}, SquareIdentifierToCoordinate(H8))
 }

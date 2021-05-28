@@ -6,13 +6,21 @@ import (
 	"github.com/olekukonko/tablewriter"
 )
 
+// MAXY maximum coordinate value
+const MAXY = 7
+
+// MAXX maximum coordinate value
+const MAXX = 7
+
 // Board chess playable board
 type Board interface {
-	// EatPiece removes a piece from Board location return Piece
-	EatPiece(loc SquareIdentifier) Piece
+	Squares() Squares
 	WhitePlayer() *Player
 	BlackPlayer() *Player
-	Squares() Squares
+	// EatPiece removes a piece from Board location return Piece
+	EatPiece(loc SquareIdentifier) Piece
+	// Fill a square with a piece
+	FillSquare(SquareIdentifier, Piece)
 	String() string
 }
 
@@ -41,17 +49,16 @@ func LoadBoard(whitePlayer, blackPlayer *Player, squares Squares) Board {
 	}
 }
 
+func (b *board) Squares() Squares {
+	return b.squares
+}
+
 func (b *board) WhitePlayer() *Player {
 	return b.whitePlayer
 }
 
 func (b *board) BlackPlayer() *Player {
 	return b.blackPlayer
-}
-
-// fillSquares fill squares board with new game
-func (b *board) fillSquares() {
-	b.squares = PristineSquares()
 }
 
 func (b *board) EatPiece(loc SquareIdentifier) Piece {
@@ -63,8 +70,14 @@ func (b *board) EatPiece(loc SquareIdentifier) Piece {
 	return piece
 }
 
-func (b *board) Squares() Squares {
-	return b.squares
+func (b *board) FillSquare(loc SquareIdentifier, piece Piece) {
+	square := b.squares[loc]
+	square.Piece = piece
+	square.Empty = false
+	if piece == nil {
+		square.Empty = true
+	}
+	b.squares[loc] = square
 }
 
 func (b *board) String() string {
@@ -100,6 +113,11 @@ func (b *board) String() string {
 	return builder.String()
 }
 
+// fillSquares fill squares board with new game
+func (b *board) fillSquares() {
+	b.squares = PristineSquares()
+}
+
 // Squares board squares, total of 8*8
 type Squares map[SquareIdentifier]Square
 
@@ -118,12 +136,6 @@ func (s *Square) String() string {
 	return s.Piece.String()
 }
 
-// MAXY maximum coordinate value
-const MAXY = 7
-
-// MAXX maximum coordinate value
-const MAXX = 7
-
 // Coordinate a coordinate within the Board, starting at 0,0 = A1, 8,8 = H8
 type Coordinate struct {
 	X uint8
@@ -133,6 +145,14 @@ type Coordinate struct {
 // CoordinateToSquareIdentifier returns equivalent value from Coordinate to Square Identifier
 func CoordinateToSquareIdentifier(c Coordinate) SquareIdentifier {
 	return SquareIdentifier(c.Y*8 + c.X + 1)
+}
+
+// SquareIdentifierToCoordinate returns Coordinate equals to SquareIdentifier
+func SquareIdentifierToCoordinate(i SquareIdentifier) Coordinate {
+	return Coordinate{
+		X: (uint8(i) - 1) % 8,
+		Y: (uint8(i) - 1) / 8,
+	}
 }
 
 // PristineSquares returns Squares at game initialization

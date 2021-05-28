@@ -61,6 +61,18 @@ func (mr *MockBoardMockRecorder) EatPiece(loc interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "EatPiece", reflect.TypeOf((*MockBoard)(nil).EatPiece), loc)
 }
 
+// FillSquare mocks base method.
+func (m *MockBoard) FillSquare(arg0 SquareIdentifier, arg1 Piece) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "FillSquare", arg0, arg1)
+}
+
+// FillSquare indicates an expected call of FillSquare.
+func (mr *MockBoardMockRecorder) FillSquare(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FillSquare", reflect.TypeOf((*MockBoard)(nil).FillSquare), arg0, arg1)
+}
+
 // Squares mocks base method.
 func (m *MockBoard) Squares() Squares {
 	m.ctrl.T.Helper()

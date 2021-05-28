@@ -1,5 +1,6 @@
 #!/bin/bash
 
+docker network create chess || true
 docker run -d \
 	--name chess_postgresql \
 	--network chess \
