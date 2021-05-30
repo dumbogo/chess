@@ -16,6 +16,7 @@ import (
 
 	"github.com/dumbogo/chess/api"
 	pb "github.com/dumbogo/chess/api"
+	"github.com/dumbogo/chess/messagebroker"
 )
 
 var (
@@ -47,6 +48,8 @@ var (
 	// Github credentials
 	githubKey    string // CHESS_API_GITHUB_KEY
 	githubSecret string // CHESS_API_GITHUB_SECRET
+
+	natsURL string // NATS_URL
 )
 
 func init() {
@@ -99,10 +102,12 @@ func initConfig() {
 	v.BindEnv("database_password")
 	v.BindEnv("github_key")
 	v.BindEnv("github_secret")
+	v.BindEnv("nats_url")
 	dbUser = v.GetString("database_username")
 	dbPassword = v.GetString("database_password")
 	githubKey = v.GetString("github_key")
 	githubSecret = v.GetString("github_secret")
+	natsURL = v.GetString("nats_url")
 }
 
 var startCmd = &cobra.Command{
@@ -133,6 +138,13 @@ var startCmd = &cobra.Command{
 		if err != nil {
 			log.Fatalf("failed to connect databse: %v", err)
 		}
+
+		// Load nats connection
+		mb, err := messagebroker.New(messagebroker.Config{URL: natsURL})
+		if err != nil {
+			log.Fatalf("Failed to initialize nats: %v", err)
+		}
+		pb.MessageBroker = mb
 		pb.RegisterChessServiceServer(s, &pb.Server{
 			Db: db,
 		})

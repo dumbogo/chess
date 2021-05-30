@@ -6,6 +6,7 @@ service ChessService {
 	rpc StartGame(StartGameRequest) returns (StartGameResponse);
 	rpc JoinGame(JoinGameRequest) returns (JoinGameResponse);
 	rpc Move(MoveRequest) returns (MoveResponse);
+	rpc Watch(WatchRequest) returns (stream WatchResponse);
 }
 
 enum Color {
@@ -44,4 +45,14 @@ message MoveResponse {
 	string status_code = 1;
 	string error = 2;
 	string board = 3;
+}
+
+message WatchRequest {
+	string uuid = 1;
+}
+
+message WatchResponse {
+	string turn = 1;
+	string board = 2;
+	string status = 3;
 }

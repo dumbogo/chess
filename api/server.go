@@ -3,11 +3,14 @@ package api
 import (
 	context "context"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"log"
 	"strings"
 	"time"
 
 	"github.com/dumbogo/chess/engine"
+	"github.com/dumbogo/chess/messagebroker"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -19,6 +22,9 @@ var (
 	errMissingMetadata = status.Errorf(codes.InvalidArgument, "missing metadata")
 	errInvalidToken    = status.Errorf(codes.Unauthenticated, "invalid token")
 )
+
+// MessageBroker a pub/sub messagre broker system to send updates on watchers
+var MessageBroker messagebroker.MessageBroker
 
 // Server grpc server interface implementation
 type Server struct {
@@ -152,6 +158,32 @@ func (s *Server) JoinGame(ctx context.Context, r *JoinGameRequest) (*JoinGameRes
 		Uuid:  uuid,
 		Color: color,
 	}, nil
+}
+
+// Watch receive live updates on the current game loaded
+func (s *Server) Watch(r *WatchRequest, stream ChessService_WatchServer) error {
+	if MessageBroker == nil {
+		log.Printf("Message broker not initialized, prompts error")
+		return errors.New("internal server error")
+	}
+	chMsgs, err := MessageBroker.Subscribe(r.GetUuid())
+	if err != nil {
+		return err
+	}
+	for msg := range chMsgs {
+		payload := payloadUpdateGame{}
+		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
+			return err
+		}
+		if err := stream.Send(&WatchResponse{
+			Status: payload.Status,
+			Turn:   payload.Turn,
+			Board:  payload.Board,
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // Move Moves a player piece

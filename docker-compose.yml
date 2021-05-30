@@ -14,3 +14,10 @@ services:
       - chess
     ports:
       - 5432:5432
+  nats:
+    image: nats
+    container_name: chess_nats
+    networks:
+      - chess
+    ports:
+      - 4222:4222

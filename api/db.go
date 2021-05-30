@@ -9,6 +9,7 @@ import (
 	"strconv"
 
 	"github.com/dumbogo/chess/engine"
+	"github.com/dumbogo/chess/messagebroker"
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -81,6 +82,30 @@ type Game struct {
 	WhitePieces   pieces     `gorm:"type:jsonb;not null"`
 	BlackPieces   pieces     `gorm:"type:jsonb;not null"`
 	BoardSquares  Squares    `gorm:"type:jsonb;not null"`
+}
+
+// AfterSave ...
+func (g *Game) AfterSave(tx *gorm.DB) (err error) {
+	if MessageBroker == nil {
+		return nil
+	}
+	board := engine.LoadBoard(&engine.Player{}, &engine.Player{}, squaresToEngineSquares(g.BoardSquares))
+	bytes, err := json.Marshal(payloadUpdateGame{
+		Turn:   fmt.Sprint(g.Turn), // TODO: add corresponding color player
+		Status: "somestatus",       // TODO: add the corresponding status
+		Board:  board.String(),
+	})
+	if err != nil {
+		return err
+	}
+	MessageBroker.Publish(g.UUID.String(), messagebroker.Message{Payload: bytes})
+	return
+}
+
+type payloadUpdateGame struct {
+	Turn   string `json:"turn"`
+	Board  string `json:"board"`
+	Status string `json:"status"`
 }
 
 type pieces map[uint8]uint8

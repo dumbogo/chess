@@ -21,6 +21,7 @@ type ChessServiceClient interface {
 	StartGame(ctx context.Context, in *StartGameRequest, opts ...grpc.CallOption) (*StartGameResponse, error)
 	JoinGame(ctx context.Context, in *JoinGameRequest, opts ...grpc.CallOption) (*JoinGameResponse, error)
 	Move(ctx context.Context, in *MoveRequest, opts ...grpc.CallOption) (*MoveResponse, error)
+	Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (ChessService_WatchClient, error)
 }
 
 type chessServiceClient struct {
@@ -58,6 +59,38 @@ func (c *chessServiceClient) Move(ctx context.Context, in *MoveRequest, opts ...
 	return out, nil
 }
 
+func (c *chessServiceClient) Watch(ctx context.Context, in *WatchRequest, opts ...grpc.CallOption) (ChessService_WatchClient, error) {
+	stream, err := c.cc.NewStream(ctx, &ChessService_ServiceDesc.Streams[0], "/ChessService/Watch", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &chessServiceWatchClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type ChessService_WatchClient interface {
+	Recv() (*WatchResponse, error)
+	grpc.ClientStream
+}
+
+type chessServiceWatchClient struct {
+	grpc.ClientStream
+}
+
+func (x *chessServiceWatchClient) Recv() (*WatchResponse, error) {
+	m := new(WatchResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // ChessServiceServer is the server API for ChessService service.
 // All implementations must embed UnimplementedChessServiceServer
 // for forward compatibility
@@ -65,6 +98,7 @@ type ChessServiceServer interface {
 	StartGame(context.Context, *StartGameRequest) (*StartGameResponse, error)
 	JoinGame(context.Context, *JoinGameRequest) (*JoinGameResponse, error)
 	Move(context.Context, *MoveRequest) (*MoveResponse, error)
+	Watch(*WatchRequest, ChessService_WatchServer) error
 	mustEmbedUnimplementedChessServiceServer()
 }
 
@@ -80,6 +114,9 @@ func (UnimplementedChessServiceServer) JoinGame(context.Context, *JoinGameReques
 }
 func (UnimplementedChessServiceServer) Move(context.Context, *MoveRequest) (*MoveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Move not implemented")
+}
+func (UnimplementedChessServiceServer) Watch(*WatchRequest, ChessService_WatchServer) error {
+	return status.Errorf(codes.Unimplemented, "method Watch not implemented")
 }
 func (UnimplementedChessServiceServer) mustEmbedUnimplementedChessServiceServer() {}
 
@@ -148,6 +185,27 @@ func _ChessService_Move_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ChessService_Watch_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(WatchRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(ChessServiceServer).Watch(m, &chessServiceWatchServer{stream})
+}
+
+type ChessService_WatchServer interface {
+	Send(*WatchResponse) error
+	grpc.ServerStream
+}
+
+type chessServiceWatchServer struct {
+	grpc.ServerStream
+}
+
+func (x *chessServiceWatchServer) Send(m *WatchResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
 // ChessService_ServiceDesc is the grpc.ServiceDesc for ChessService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -168,6 +226,12 @@ var ChessService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _ChessService_Move_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "Watch",
+			Handler:       _ChessService_Watch_Handler,
+			ServerStreams: true,
+		},
+	},
 	Metadata: "api/service.proto",
 }
