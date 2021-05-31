@@ -48,6 +48,7 @@ func TestSubscribe(t *testing.T) {
 
 	message := Message{Payload: []byte("someinfo")}
 	err = mb.Publish("sometopic", message)
+	assert.Nil(err)
 
 	select {
 	case m := <-subCh:
