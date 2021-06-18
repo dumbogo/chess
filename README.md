@@ -77,6 +77,12 @@ $ chessapi start -c config.toml
 ## Client
 ### Install
 
+### MacOSX
+With brew:
+```sh
+$ brew install dumbogo/tap/chess
+```
+
 ### Building from source
 ```sh
 $ go get github.com/dumbogo/chess/cmd/chess

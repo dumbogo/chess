@@ -5,12 +5,10 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"os"
-	"path"
 	"time"
 
 	pb "github.com/dumbogo/chess/api"
-	"github.com/spf13/viper"
+	"github.com/dumbogo/chess/config"
 	"golang.org/x/oauth2"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -19,65 +17,20 @@ import (
 
 const defaultTimeOutContext = time.Second
 
-var (
-	// APIServerURL URL API to make calls
-	APIServerURL string // API_SERVER_URL
-
-	// ClientCertfile client certificate TLS location file
-	ClientCertfile string // CLIENT_CERTFILE
-
-	// ServerNameOverride is for testing only. If set to a non empty string,
-	// it will override the virtual host name of authority (e.g. :authority header
-	// field) in requests.
-	ServerNameOverride string // SERVERNAME_OVERRIDE
-
-	// AuthToken token authenticated to make API calls
-	AuthToken string // oauth2.*.token
-
-	configName = "config"
-	configType = "toml"
-	// configPath loaded dinamically
-	configPath = ".chess"
-)
-
 func init() {
-	initConfig()
-}
-
-func initConfig() {
-	viper.SetConfigName(configName)
-	viper.SetConfigType(configType)
-
-	var (
-		homeDir string
-		err     error
-	)
-	if homeDir, err = os.UserHomeDir(); err != nil {
-		panic(fmt.Errorf("home directory not found %v", err))
-	}
-	configPath := path.Join(homeDir, configPath)
-	viper.AddConfigPath(configPath)
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatalf("Config file not found, please add a config file on %s directory", configPath)
-		} else {
-			panic(err)
-		}
-	}
-	APIServerURL = viper.GetString("API_SERVER_URL")
-	ClientCertfile = viper.GetString("CLIENT_CERTFILE")
-	ServerNameOverride = viper.GetString("SERVERNAME_OVERRIDE")
-	AuthToken = viper.GetString("oauth2.github.token") // TODO: hardcoded to github, change it when implementing more providers
+	config.InitClientConfig()
 }
 
 // InitConn initializes client connection to GRPC server
 func InitConn() (*grpc.ClientConn, error) {
 	// Set up the credentials for the connection.
 	perRPC := oauth.NewOauthAccess(&oauth2.Token{
-		AccessToken: AuthToken,
+		AccessToken: config.ClientConfig.AuthToken,
 	})
-
-	creds, err := credentials.NewClientTLSFromFile(ClientCertfile, ServerNameOverride)
+	creds, err := credentials.NewClientTLSFromFile(
+		config.ClientConfig.ClientCertfile,
+		config.ClientConfig.ServerNameOverride,
+	)
 	if err != nil {
 		log.Fatalf("failed to load credentials: %v", err)
 	}
@@ -90,7 +43,7 @@ func InitConn() (*grpc.ClientConn, error) {
 		grpc.WithTransportCredentials(creds),
 	}
 	// opts = append(opts, grpc.WithBlock())
-	return grpc.Dial(APIServerURL, opts...)
+	return grpc.Dial(config.ClientConfig.APIServerURL, opts...)
 }
 
 // StartGame creates a new Game
@@ -116,10 +69,10 @@ func Move(conn *grpc.ClientConn, fromSquare, toSquare string) {
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutContext)
 	defer cancel()
-	color := pb.Color_value[(viper.GetString("game.color"))]
+	color := pb.Color_value[(config.ClientConfig.Game.Color)]
 	r, err := c.Move(ctx, &pb.MoveRequest{
 		Color:      pb.Color(color),
-		Uuid:       viper.GetString("game.uuid"),
+		Uuid:       config.ClientConfig.Game.UUID,
 		FromSquare: fromSquare,
 		ToSquare:   toSquare,
 	})
@@ -170,18 +123,18 @@ func Watch(conn *grpc.ClientConn, uuid string) {
 }
 
 func storeGame(uuid string, name string, color pb.Color) {
-	viper.Set("game.uuid", uuid)
-	viper.Set("game.name", name)
-	viper.Set("game.color", color)
-	if err := viper.WriteConfig(); err != nil {
+	if err := config.UpdateGame(&config.GameClientConfig{
+		Name:  name,
+		UUID:  uuid,
+		Color: color.String(),
+	}); err != nil {
 		panic(err)
 	}
 }
 
 // RegisterGithubToken records token on persisted config
 func RegisterGithubToken(token string) {
-	viper.Set("oauth2.github.token", token)
-	if err := viper.WriteConfig(); err != nil {
+	if err := config.SetClientAuthToken(token); err != nil {
 		panic(err)
 	}
 }

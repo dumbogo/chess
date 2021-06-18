@@ -54,11 +54,11 @@ var (
 
 func init() {
 	rootCmd.AddCommand(startCmd)
-	cobra.OnInitialize(initConfig)
-	startCmd.Flags().StringVarP(&configFile, "config", "c", "", "TOML configuration file to start API server (required)")
+	startCmd.Flags().StringVarP(&configFile, "config", "c", "", "TOML configuration file to start API server")
 	if err := startCmd.MarkFlagRequired("config"); err != nil {
 		panic(err)
 	}
+	cobra.OnInitialize(initConfig)
 }
 
 func initConfig() {
@@ -98,13 +98,33 @@ func initConfig() {
 	// TODO: Set ENVS as mandatory
 	v.SetEnvPrefix("CHESS_API")
 	v.AllowEmptyEnv(false) // This doesn't work as expected
-	v.BindEnv("database_username")
-	v.BindEnv("database_password")
-	v.BindEnv("github_key")
-	v.BindEnv("github_secret")
-	v.BindEnv("nats_url")
+
+	if err := v.BindEnv("DATABASE_USERNAME"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
+	if err := v.BindEnv("DATABASE_PASSWORD"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
+	if err := v.BindEnv("GITHUB_KEY"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
+	if err := v.BindEnv("GITHUB_SECRET"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
+	if err := v.BindEnv("NATS_URL", "someval"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
+
+	if !v.IsSet("DATABASE_USERNAME") {
+		log.Fatalf("required env %s", "CHESS_API_DATABASE_USERNAME")
+	}
 	dbUser = v.GetString("database_username")
+
+	if !v.IsSet("DATABASE_PASSWORD") {
+		log.Fatalf("required env %s", "CHESS_API_DATABASE_PASSWORD")
+	}
 	dbPassword = v.GetString("database_password")
+
 	githubKey = v.GetString("github_key")
 	githubSecret = v.GetString("github_secret")
 	natsURL = v.GetString("nats_url")
