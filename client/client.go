@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -105,8 +106,10 @@ func JoinGame(conn *grpc.ClientConn, uuid string) {
 func Watch(conn *grpc.ClientConn, uuid string) {
 	c := pb.NewChessServiceClient(conn)
 	if uuid == "" {
-		fmt.Printf("clientCOnfig: %+v\n", clientConfig)
 		uuid = clientConfig.Game.UUID
+	}
+	if uuid == "" {
+		panic(errors.New("No current game, please either provide a game uuid or create/join one"))
 	}
 	// Contact the server and print out its response.
 	stream, err := c.Watch(context.Background(), &pb.WatchRequest{Uuid: uuid})

@@ -4,7 +4,7 @@ title = "Client TOML config sample"
 api_server_url = "localhost:8000"
 
 # Client_certfile TLS connection to GRPC server
-client_certfile = "[$HOME/.chess/certs/x509/contoso.crt"
+client_certfile = "$HOME/.chess/certs/x509/contoso.crt"
 
 # serverNameOverride GRPC server, is for testing only. If set to a non empty string,
 # it will override the virtual host name of authority (e.g. :authority header
