@@ -10,7 +10,6 @@ import (
 func init() {
 	rootCmd.AddCommand(watchCmd)
 	watchCmd.Flags().StringVarP(&uuid, "uuid", "I", "", "uuid game")
-	watchCmd.MarkFlagRequired("uuid")
 }
 
 var watchCmd = &cobra.Command{

@@ -17,6 +17,8 @@ import (
 
 const defaultTimeOutContext = time.Second
 
+var clientConfig = &config.ClientConfig
+
 func init() {
 	config.InitClientConfig()
 }
@@ -25,11 +27,11 @@ func init() {
 func InitConn() (*grpc.ClientConn, error) {
 	// Set up the credentials for the connection.
 	perRPC := oauth.NewOauthAccess(&oauth2.Token{
-		AccessToken: config.ClientConfig.AuthToken,
+		AccessToken: clientConfig.AuthToken,
 	})
 	creds, err := credentials.NewClientTLSFromFile(
-		config.ClientConfig.ClientCertfile,
-		config.ClientConfig.ServerNameOverride,
+		clientConfig.ClientCertfile,
+		clientConfig.ServerNameOverride,
 	)
 	if err != nil {
 		log.Fatalf("failed to load credentials: %v", err)
@@ -43,7 +45,7 @@ func InitConn() (*grpc.ClientConn, error) {
 		grpc.WithTransportCredentials(creds),
 	}
 	// opts = append(opts, grpc.WithBlock())
-	return grpc.Dial(config.ClientConfig.APIServerURL, opts...)
+	return grpc.Dial(clientConfig.APIServerURL, opts...)
 }
 
 // StartGame creates a new Game
@@ -69,10 +71,10 @@ func Move(conn *grpc.ClientConn, fromSquare, toSquare string) {
 	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutContext)
 	defer cancel()
-	color := pb.Color_value[(config.ClientConfig.Game.Color)]
+	color := pb.Color_value[(clientConfig.Game.Color)]
 	r, err := c.Move(ctx, &pb.MoveRequest{
 		Color:      pb.Color(color),
-		Uuid:       config.ClientConfig.Game.UUID,
+		Uuid:       clientConfig.Game.UUID,
 		FromSquare: fromSquare,
 		ToSquare:   toSquare,
 	})
@@ -99,8 +101,13 @@ func JoinGame(conn *grpc.ClientConn, uuid string) {
 }
 
 // Watch watches a live game, outputs movements to STDOUT
+// If not uuid is provided, set the stored in configuration
 func Watch(conn *grpc.ClientConn, uuid string) {
 	c := pb.NewChessServiceClient(conn)
+	if uuid == "" {
+		fmt.Printf("clientCOnfig: %+v\n", clientConfig)
+		uuid = clientConfig.Game.UUID
+	}
 	// Contact the server and print out its response.
 	stream, err := c.Watch(context.Background(), &pb.WatchRequest{Uuid: uuid})
 	if err != nil {

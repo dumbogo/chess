@@ -16,10 +16,10 @@ var (
 		AuthToken string // oauth2.*.token
 		// ClientCertfile client certificate TLS location file
 		ClientCertfile string // CLIENT_CERTFILE
-		// field) in requests.
 
 		// ServerNameOverride is for testing only. If set to a non empty string,
 		// it will override the virtual host name of authority (e.g. :authority header
+		// field) in requests.
 		ServerNameOverride string // SERVERNAME_OVERRIDE
 
 		// APIServerURL URL API to make calls
@@ -70,6 +70,11 @@ func InitClientConfig() {
 	ClientConfig.ClientCertfile = viper.GetString("CLIENT_CERTFILE")
 	ClientConfig.ServerNameOverride = viper.GetString("SERVERNAME_OVERRIDE")
 	ClientConfig.AuthToken = viper.GetString("oauth2.github.token") // TODO: hardcoded to github, change it when implementing more providers
+	ClientConfig.Game = &GameClientConfig{
+		UUID:  viper.GetString("game.uuid"),
+		Name:  viper.GetString("game.name"),
+		Color: viper.GetString("game.color"),
+	}
 }
 
 // UpdateGame update Game Configuration and persist it
