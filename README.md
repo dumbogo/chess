@@ -91,7 +91,7 @@ $ chess help
 
 ### Configure
 To configure your client, you need to add a TOML config file on `$HOME/.chess/config`, you can use default config from command bellow:
-```TOML
+```sh
 # create folders:
 $ mkdir -p ~/.chess/certs/x509
 $ chess config default > ~/.chess/config
