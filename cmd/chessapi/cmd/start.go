@@ -102,31 +102,32 @@ func initConfig() {
 	if err := v.BindEnv("DATABASE_USERNAME"); err != nil {
 		log.Fatalf("Unexpected error %s", err.Error())
 	}
-	if err := v.BindEnv("DATABASE_PASSWORD"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	if err := v.BindEnv("GITHUB_KEY"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	if err := v.BindEnv("GITHUB_SECRET"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	if err := v.BindEnv("NATS_URL", "someval"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-
 	if !v.IsSet("DATABASE_USERNAME") {
 		log.Fatalf("required env %s", "CHESS_API_DATABASE_USERNAME")
 	}
 	dbUser = v.GetString("database_username")
 
+	if err := v.BindEnv("DATABASE_PASSWORD"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
 	if !v.IsSet("DATABASE_PASSWORD") {
 		log.Fatalf("required env %s", "CHESS_API_DATABASE_PASSWORD")
 	}
 	dbPassword = v.GetString("database_password")
 
+	if err := v.BindEnv("GITHUB_KEY"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
 	githubKey = v.GetString("github_key")
+
+	if err := v.BindEnv("GITHUB_SECRET"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
 	githubSecret = v.GetString("github_secret")
+
+	if err := v.BindEnv("NATS_URL"); err != nil {
+		log.Fatalf("Unexpected error %s", err.Error())
+	}
 	natsURL = v.GetString("nats_url")
 }
 

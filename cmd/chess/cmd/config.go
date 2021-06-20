@@ -24,8 +24,8 @@ var defaultConfigCmd = &cobra.Command{
 	Short: "Print default configuration",
 	Long:  "Print default configuration with mandatory fields to play",
 	Run: func(cmd *cobra.Command, args []string) {
-		defaultBaseC := config.DefaultBaseConfig()
-		str, err := defaultBaseC.Marshal()
+		defaultBaseConfig := config.DefaultBaseConfig()
+		str, err := defaultBaseConfig.Marshal()
 		if err != nil {
 			panic(err)
 		}
@@ -46,3 +46,6 @@ var viewConfigCmd = &cobra.Command{
 		fmt.Printf("%s", str)
 	},
 }
+
+// TODO: chess config credentials, sub command to configure credentias
+// Must investigate about how to fix the problem of using CA credentials in the project

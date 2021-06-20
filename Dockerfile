@@ -9,5 +9,5 @@ WORKDIR /go/src/github.com/dumbogo/chess
 # Build the outyet command inside the container.
 # (You may fetch or manage dependencies here,
 # either manually or with a tool like "godep".)
-RUN go build -o chessapi /go/src/github.com/dumbogo/chess/cmd/api/main.go && \
-    go build -o chess /go/src/github.com/dumbogo/chess/cmd/client/main.go
+RUN go install /go/src/github.com/dumbogo/chess/cmd/chessapi && \
+    go install /go/src/github.com/dumbogo/chess/cmd/chess

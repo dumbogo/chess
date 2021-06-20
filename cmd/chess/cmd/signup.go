@@ -39,7 +39,6 @@ var signUpCmd = &cobra.Command{
 			log.Fatalf("Error: %v\n", err)
 		}
 		defer conn.Close()
-
 		client.RegisterGithubToken(string(token))
 	},
 }

@@ -17,3 +17,6 @@ vendor/
 
 # ENV file
 .env
+
+# Some custom configuration
+config/*.toml

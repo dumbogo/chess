@@ -77,7 +77,7 @@ $ chessapi start -c config.toml
 ## Client
 ### Install
 
-### MacOSX
+#### MacOSX
 With brew:
 ```sh
 $ brew install dumbogo/tap/chess
@@ -90,20 +90,11 @@ $ chess help
 ```
 
 ### Configure
-To configure your client, you need to add a TOML config file on `$HOME/.chess/config`:
+To configure your client, you need to add a TOML config file on `$HOME/.chess/config`, you can use default config from command bellow:
 ```TOML
-title = "Client TOML config sample"
-
-## GRPC server game url
-api_server_url = "localhost:8000"
-
-# Client_certfile TLS connection to GRPC server
-client_certfile = "[$HOME/.chess/certs/x509/contoso.crt"
-
-# serverNameOverride GRPC server, is for testing only. If set to a non empty string,
-# it will override the virtual host name of authority (e.g. :authority header
-# field) in requests.
-servername_override = "www.fabrikam.com"
+# create folders:
+$ mkdir -p ~/.chess/certs/x509
+$ chess config default > ~/.chess/config
 ```
 
 Also, you need to add the client certfile on `$HOME/.chess/certs/` location, you can use the samples on `certs`.

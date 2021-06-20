@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	pb "github.com/dumbogo/chess/api"
@@ -20,18 +22,19 @@ const defaultTimeOutContext = time.Second
 
 var clientConfig = &config.ClientConfig
 
-func init() {
-	config.InitClientConfig()
-}
-
 // InitConn initializes client connection to GRPC server
 func InitConn() (*grpc.ClientConn, error) {
 	// Set up the credentials for the connection.
+	config.InitClientConfig()
 	perRPC := oauth.NewOauthAccess(&oauth2.Token{
 		AccessToken: clientConfig.AuthToken,
 	})
+	pathCertFile, err := relPathtoFilePath(clientConfig.ClientCertfile)
+	if err != nil {
+		return nil, err
+	}
 	creds, err := credentials.NewClientTLSFromFile(
-		clientConfig.ClientCertfile,
+		pathCertFile,
 		clientConfig.ServerNameOverride,
 	)
 	if err != nil {
@@ -147,4 +150,15 @@ func RegisterGithubToken(token string) {
 	if err := config.SetClientAuthToken(token); err != nil {
 		panic(err)
 	}
+}
+
+func relPathtoFilePath(path string) (string, error) {
+	if !strings.Contains(path, "$HOME") {
+		return path, nil
+	}
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return strings.ReplaceAll(path, "$HOME", userHomeDir), nil
 }
