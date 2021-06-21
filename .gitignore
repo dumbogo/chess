@@ -20,3 +20,11 @@ vendor/
 
 # Some custom configuration
 config/*.toml
+
+# Ignore binaries built
+/bin/
+
+# Ignore releases
+releases/*.tar.gz
+releases/*.zip
+releases/sha256sums.txt

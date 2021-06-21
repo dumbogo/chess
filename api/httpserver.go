@@ -82,6 +82,7 @@ func callbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// Update all columns, except primary keys, to new value on conflict
 	DBConn.Clauses(clause.OnConflict{
+		Columns:   []clause.Column{{Name: "email"}},
 		UpdateAll: true,
 	}).Create(&userdb)
 }

@@ -15,3 +15,7 @@ func TestInitHTTPRouter(t *testing.T) {
 	}
 	InitHTTPRouter(c)
 }
+
+func TestGithubCallback(t *testing.T) {
+	t.Skipf("TODO: Needs tests callback auth github")
+}
