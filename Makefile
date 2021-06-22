@@ -5,7 +5,7 @@ BINDIR ?= bin
 RELEASEDIR ?= releases
 
 ## HARDCODED, needs to automatically detects current version by git
-version ?= v1.0.0-alpha
+version ?= v1.0.0-alpha.1
 
 test: # run unit tests
 	 $(GO) test ./... -cover -coverprofile=coverage.out -v
