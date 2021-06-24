@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"net/url"
 
@@ -15,36 +16,55 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-// HTTPRouter Mux router for HTTP server
-var HTTPRouter *mux.Router
+// HTTPServer handler in charge of HTTP 1.2 requests
+type HTTPServer interface {
+	Listen() error
+	GetHandler() http.Handler
+}
 
-// ConfigHTTPRouter HTTP router configuration
-type ConfigHTTPRouter struct {
+type httpServer struct {
+	Handler      http.Handler
 	URLLoc       url.URL
 	GithubKey    string
 	GithubSecret string
 	// SessionKey Ensure your key is sufficiently random - i.e. use Go's
 	// crypto/rand or securecookie.GenerateRandomKey(32) and persist the result.
 	SessionKey string
-
-	// Env environment
-	Env string
+	Env        string
 }
 
-// InitHTTPRouter initializes HTTPHandler, create mux Handler and define HTTTP routes
-func InitHTTPRouter(c ConfigHTTPRouter) {
-	HTTPRouter = mux.NewRouter()
-	HTTPRouter.HandleFunc("/auth/{provider}/callback", callbackHandler)
-	HTTPRouter.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler)
-	HTTPRouter.HandleFunc("/", rootHandler)
-	provierCallbackURL := fmt.Sprintf("%s://%s/auth/github/callback?provider=github", c.URLLoc.Scheme, c.URLLoc.Host)
+func (h *httpServer) GetHandler() http.Handler {
+	return h.Handler
+}
+
+// NewHTTPServer creates a new HTTPServer
+func NewHTTPServer(addr url.URL, githubKey string, githubSecret string, sessionKey string, env string) (HTTPServer, error) {
+	host, _, _ := net.SplitHostPort(addr.Host)
+	handler := mux.NewRouter()
+	handler.HandleFunc("/auth/{provider}/callback", callbackHandler)
+	handler.HandleFunc("/auth/{provider}", gothic.BeginAuthHandler)
+	handler.HandleFunc("/", rootHandler)
+	provierCallbackURL := fmt.Sprintf("%s://%s/auth/github/callback?provider=github", addr.Scheme, host)
 	goth.UseProviders(
-		github.New(c.GithubKey, c.GithubSecret, provierCallbackURL, "user:email"),
+		github.New(githubKey, githubSecret, provierCallbackURL, "user:email"),
 	)
 	gothic.GetState = func(r *http.Request) string {
 		return r.URL.Query().Get("state")
 	}
-	initGothicStore(c.SessionKey, c.Env)
+	initGothicStore(sessionKey, env)
+
+	return &httpServer{
+		Handler:      handler,
+		URLLoc:       addr,
+		GithubKey:    githubKey,
+		GithubSecret: githubSecret,
+		SessionKey:   sessionKey,
+		Env:          env,
+	}, nil
+}
+
+func (h *httpServer) Listen() error {
+	return http.ListenAndServe(fmt.Sprintf(":%s", h.URLLoc.Port()), h.Handler)
 }
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +130,5 @@ func initGothicStore(key string, env string) {
 	store.Options.Path = "/"
 	store.Options.HttpOnly = true // HttpOnly should always be enabled
 	store.Options.Secure = isProd
-
 	gothic.Store = store
-
 }

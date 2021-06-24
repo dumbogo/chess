@@ -4,6 +4,21 @@ networks:
   chess:
     external: true
 services:
+  chess:
+    build: .
+    command: go run cmd/chessapi/main.go start -c config/server.toml
+    container_name: chessapi
+    env_file: .env
+    networks:
+      - chess
+    ports:
+      - "8080:8080"
+      - "8000:8000"
+    volumes:
+      - .:/go/src/github.com/dumbogo/chess
+    depends_on:
+      - postgresql
+      - nats
   postgresql:
     image: postgres
     container_name: chess_postgresql

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"net/http"
 	"net/url"
 	"path/filepath"
 
@@ -172,19 +171,29 @@ var startCmd = &cobra.Command{
 
 		// Load HTTP server
 		go func() {
-			api.InitHTTPRouter(api.ConfigHTTPRouter{
-				URLLoc:       url.URL{Scheme: httpServerScheme, Host: httpServerHost},
-				GithubKey:    githubKey,
-				GithubSecret: githubSecret,
+			s, err := api.NewHTTPServer(
+				url.URL{
+					Scheme: httpServerScheme,
+					Host:   fmt.Sprintf("%s%s", httpServerHost, httpServerPort),
+				},
+				githubKey,
+				githubSecret,
 				// Ensure your key is sufficiently random - i.e. use Go's
 				// crypto/rand or securecookie.GenerateRandomKey(32) and persist the result.
-				SessionKey: "somerandomtext",
-				Env:        Env,
-			})
-			log.Fatal(http.ListenAndServe(fmt.Sprintf("localhost%s", httpServerPort), api.HTTPRouter))
+				"somerandomtext",
+				Env,
+			)
+			if err != nil {
+				log.Fatalf("Error: %v", err)
+			}
+			log.Printf("Listening HTTP server, on port %s\n", httpServerPort)
+			if err := s.Listen(); err != nil {
+				log.Fatalf("failed to serve: %v", err)
+			}
 		}()
 
 		// Load grpc server
+		log.Printf("Listening gRPC server, on port %s\n", apiPort)
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}

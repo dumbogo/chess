@@ -5,7 +5,7 @@ BINDIR ?= bin
 RELEASEDIR ?= releases
 
 ## HARDCODED, needs to automatically detects current version by git
-version ?= v1.0.0-alpha.1
+version ?= v1.0.0-alpha.2
 
 test: # run unit tests
 	 $(GO) test ./... -cover -coverprofile=coverage.out -v
@@ -33,3 +33,10 @@ proto: # Build proto files
 	GO111MODULE=on protoc --go_out=. --go_opt=paths=source_relative \
 		--go-grpc_out=. --go-grpc_opt=paths=source_relative \
 		api/service.proto
+deployk8:
+	echo "starting kubernetes deployment" && \
+		kubectl apply -f k8/secrets.yaml && \
+		kubectl apply -f k8/configmaps.yml && \
+		kubectl apply -f k8/postgresql/deployment.yml && \
+		kubectl apply -f k8/deployment.yml && \
+		kubectl apply -f k8/services.yml
