@@ -20,12 +20,12 @@ import (
 
 const defaultTimeOutContext = time.Second
 
-var clientConfig = &config.ClientConfig
+var clientConfig *config.ClientConfiguration
 
-// InitConn initializes client connection to GRPC server
+// InitConn loads configuration and initializes connection to server
 func InitConn() (*grpc.ClientConn, error) {
+	clientConfig = config.LoadClientConfiguration()
 	// Set up the credentials for the connection.
-	config.InitClientConfig()
 	perRPC := oauth.NewOauthAccess(&oauth2.Token{
 		AccessToken: clientConfig.AuthToken,
 	})
@@ -55,24 +55,21 @@ func InitConn() (*grpc.ClientConn, error) {
 // StartGame creates a new Game
 func StartGame(conn *grpc.ClientConn, name string, color pb.Color) {
 	c := pb.NewChessServiceClient(conn)
-	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutContext)
 	defer cancel()
-	r, err := c.StartGame(ctx, &pb.StartGameRequest{
-		Name:  name,
-		Color: color,
-	})
+	r, err := c.StartGame(ctx, &pb.StartGameRequest{Name: name, Color: color})
 	if err != nil {
 		log.Fatalf("could not start game: %v", err)
 	}
 	fmt.Printf("UUID to connect: %s\n Please share this UUID to your fellow in order to play\n", r.GetUuid())
-	storeGame(r.GetUuid(), name, color)
+	if err := clientConfig.UpdateGame(r.GetUuid(), name, color.String()); err != nil {
+		panic(err)
+	}
 }
 
-// Move calls to gprc API move
+// Move call move piece server and print movement
 func Move(conn *grpc.ClientConn, fromSquare, toSquare string) {
 	c := pb.NewChessServiceClient(conn)
-	// Contact the server and print out its response.
 	ctx, cancel := context.WithTimeout(context.Background(), defaultTimeOutContext)
 	defer cancel()
 	color := pb.Color_value[(clientConfig.Game.Color)]
@@ -85,11 +82,10 @@ func Move(conn *grpc.ClientConn, fromSquare, toSquare string) {
 	if err != nil {
 		log.Fatalf("could not move piece: %v", err)
 	}
-
 	fmt.Printf("Board: \n:%s\n", r.GetBoard())
 }
 
-// JoinGame calls to gprc API JoinGame
+// JoinGame calls join game server
 func JoinGame(conn *grpc.ClientConn, uuid string) {
 	c := pb.NewChessServiceClient(conn)
 	// Contact the server and print out its response.
@@ -99,13 +95,14 @@ func JoinGame(conn *grpc.ClientConn, uuid string) {
 	if err != nil {
 		log.Fatalf("could not join game: %v", err)
 	}
-
 	fmt.Printf("Joined game uuid %s, name: %s color assigned: %s\n", r.GetUuid(), r.GetName(), r.GetColor())
-	storeGame(r.GetUuid(), r.GetName(), r.GetColor())
+	if err := clientConfig.UpdateGame(r.GetUuid(), r.GetName(), r.GetColor().String()); err != nil {
+		panic(err)
+	}
 }
 
-// Watch watches a live game, outputs movements to STDOUT
-// If not uuid is provided, set the stored in configuration
+// Watch watches a live server game by uuid, if not provided, uses the configured by client.
+// Outputs movements to STDOUT
 func Watch(conn *grpc.ClientConn, uuid string) {
 	c := pb.NewChessServiceClient(conn)
 	if uuid == "" {
@@ -114,7 +111,6 @@ func Watch(conn *grpc.ClientConn, uuid string) {
 	if uuid == "" {
 		panic(errors.New("No current game, please either provide a game uuid or create/join one"))
 	}
-	// Contact the server and print out its response.
 	stream, err := c.Watch(context.Background(), &pb.WatchRequest{Uuid: uuid})
 	if err != nil {
 		log.Fatalf("could not watch game: %v", err)
@@ -132,23 +128,6 @@ func Watch(conn *grpc.ClientConn, uuid string) {
 		fmt.Printf("Turn: %s\n", watchResponse.GetTurn())
 		fmt.Printf("Status: %s\n", watchResponse.GetStatus())
 		fmt.Println(watchResponse.GetBoard())
-	}
-}
-
-func storeGame(uuid string, name string, color pb.Color) {
-	if err := config.UpdateGame(&config.GameClientConfig{
-		Name:  name,
-		UUID:  uuid,
-		Color: color.String(),
-	}); err != nil {
-		panic(err)
-	}
-}
-
-// RegisterGithubToken records token on persisted config
-func RegisterGithubToken(token string) {
-	if err := config.SetClientAuthToken(token); err != nil {
-		panic(err)
 	}
 }
 

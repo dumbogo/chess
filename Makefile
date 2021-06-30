@@ -7,6 +7,8 @@ RELEASEDIR ?= releases
 ## HARDCODED, needs to automatically detects current version by git
 version ?= v1.0.0-alpha.2
 
+.PHONY: test integration release build clean proto deployk8 deps deps-clean
+
 test: # run unit tests
 	 $(GO) test ./... -cover -coverprofile=coverage.out -v
 
@@ -40,3 +42,23 @@ deployk8:
 		kubectl apply -f k8/postgresql/deployment.yml && \
 		kubectl apply -f k8/deployment.yml && \
 		kubectl apply -f k8/services.yml
+
+deps:
+	(docker network create chess || true ) && \
+		docker run -d \
+		--name chess_postgresql \
+		--network chess \
+		-e POSTGRES_PASSWORD=password \
+		-e POSTGRES_DB=chess_api \
+		-p 5432:5432 \
+		postgres && \
+	docker run -d \
+		--name chess_nats \
+		--network chess \
+		-p 4222:4222 \
+		nats
+
+deps-clean:
+	docker container stop chess_postgresql chess_nats || true && \
+		docker container rm chess_postgresql chess_nats || true && \
+		docker network rm chess || true

@@ -24,8 +24,8 @@ var defaultConfigCmd = &cobra.Command{
 	Short: "Print default configuration",
 	Long:  "Print default configuration with mandatory fields to play",
 	Run: func(cmd *cobra.Command, args []string) {
-		defaultBaseConfig := config.DefaultBaseConfig()
-		str, err := defaultBaseConfig.Marshal()
+		c := config.NewClientConfiguration(config.WithDefaultBaseClientConfiguration())
+		str, err := c.Marshal()
 		if err != nil {
 			panic(err)
 		}
@@ -38,8 +38,8 @@ var viewConfigCmd = &cobra.Command{
 	Short: "Show current configuration",
 	Long:  "Print current configuration client chess game",
 	Run: func(cmd *cobra.Command, args []string) {
-		config.InitClientConfig()
-		str, err := config.Marshal()
+		c := config.LoadClientConfiguration()
+		str, err := c.Marshal()
 		if err != nil {
 			panic(err)
 		}

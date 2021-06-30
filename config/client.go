@@ -11,20 +11,13 @@ import (
 )
 
 const (
-	DefaultAPIServerURL       = "dev.aguileraglz.xyz:1443"
-	DefaultClientCertfile     = "$HOME/.chess/certs/x509/client.crt"
-	DefaultServerNameOverride = "www.fabrikam.com"
-
 	configName = "config"
 	configType = "toml"
 	// configPath loaded dinamically
 	configPath = ".chess"
 )
 
-// ClientConfig client current configuration
-var ClientConfig ClientConfiguration
-
-// ClientConfiguration is the configuration set by the client
+// ClientConfiguration configuration set by the client to interact with the game
 type ClientConfiguration struct {
 	// APIServerURL URL API to make calls
 	APIServerURL string // API_SERVER_URL
@@ -41,11 +34,10 @@ type ClientConfiguration struct {
 	AuthToken string // oauth2.*.token
 
 	// Game configuration current game
-	Game *GameClientConfig
+	Game *gameClientConfig
 }
 
-// GameClientConfig configuration current game
-type GameClientConfig struct {
+type gameClientConfig struct {
 	// Name declared name by player initializer
 	Name string
 	// Color Color assigned to player
@@ -54,11 +46,12 @@ type GameClientConfig struct {
 	UUID string // game.uuid
 }
 
-// InitClientConfig initializes ClientConfig
-func InitClientConfig() {
+// LoadClientConfiguration loads config info from file configuration client
+func LoadClientConfiguration() *ClientConfiguration {
+	config := &ClientConfiguration{}
+
 	viper.SetConfigName(configName)
 	viper.SetConfigType(configType)
-
 	var (
 		homeDir string
 		err     error
@@ -75,22 +68,44 @@ func InitClientConfig() {
 			panic(err)
 		}
 	}
-	ClientConfig.APIServerURL = viper.GetString("API_SERVER_URL")
-	ClientConfig.ClientCertfile = viper.GetString("CLIENT_CERTFILE")
-	ClientConfig.ServerNameOverride = viper.GetString("SERVERNAME_OVERRIDE")
-	ClientConfig.AuthToken = viper.GetString("oauth2.github.token") // TODO: hardcoded to github, change it when implementing more providers
-	ClientConfig.Game = &GameClientConfig{
+	config.APIServerURL = viper.GetString("API_SERVER_URL")
+	config.ClientCertfile = viper.GetString("CLIENT_CERTFILE")
+	config.ServerNameOverride = viper.GetString("SERVERNAME_OVERRIDE")
+	config.AuthToken = viper.GetString("oauth2.github.token") // TODO: hardcoded to github, change it when implementing more providers
+	config.Game = &gameClientConfig{
 		UUID:  viper.GetString("game.uuid"),
 		Name:  viper.GetString("game.name"),
 		Color: viper.GetString("game.color"),
 	}
+	return config
+}
+
+// NewClientConfiguration returns new Client configuration
+func NewClientConfiguration(opts ...ClientConfigurationOption) *ClientConfiguration {
+	c := &ClientConfiguration{}
+	for _, opt := range opts {
+		opt(c)
+	}
+	return c
+}
+
+// ClientConfigurationOption option to configure client
+type ClientConfigurationOption func(*ClientConfiguration)
+
+// WithDefaultBaseClientConfiguration option to configure default base configuration
+func WithDefaultBaseClientConfiguration() ClientConfigurationOption {
+	return func(c *ClientConfiguration) {
+		c.APIServerURL = "dev.aguileraglz.xyz:1443"
+		c.ClientCertfile = "$HOME/.chess/certs/x509/client.crt"
+		c.ServerNameOverride = "www.fabrikam.com"
+	}
 }
 
 // UpdateGame update Game Configuration and persist it
-func UpdateGame(gc *GameClientConfig) error {
-	viper.Set("game.uuid", gc.UUID)
-	viper.Set("game.name", gc.Name)
-	viper.Set("game.color", gc.Color)
+func (cc *ClientConfiguration) UpdateGame(uuid string, name string, color string) error {
+	viper.Set("game.uuid", cc.Game.UUID)
+	viper.Set("game.name", cc.Game.Name)
+	viper.Set("game.color", cc.Game.Color)
 	if err := viper.WriteConfig(); err != nil {
 		log.Fatalf("Unexpected Error: %s", err.Error())
 		return err
@@ -98,13 +113,13 @@ func UpdateGame(gc *GameClientConfig) error {
 	return nil
 }
 
-// SetClientAuthToken sets auth token to configuration and persist
-func SetClientAuthToken(token string) error {
+// SetAuthToken sets auth token to configuration and persist
+func (cc *ClientConfiguration) SetAuthToken(token string) error {
 	viper.Set("oauth2.github.token", token)
 	if err := viper.WriteConfig(); err != nil {
-		log.Fatalf("Unexpected Error: %s", err.Error())
 		return err
 	}
+	cc.AuthToken = token
 	return nil
 }
 
@@ -113,6 +128,8 @@ func Marshal() ([]byte, error) {
 	c := viper.AllSettings()
 	return toml.Marshal(c)
 }
+
+// Marshal returns text representation instance ClientConfiguration
 func (cc *ClientConfiguration) Marshal() ([]byte, error) {
 	v := viper.New()
 	v.SetConfigName(configName)
@@ -128,16 +145,6 @@ func (cc *ClientConfiguration) Marshal() ([]byte, error) {
 		v.Set("game.name", cc.Game.Name)
 		v.Set("game.color", cc.Game.Color)
 	}
-
 	c := v.AllSettings()
 	return toml.Marshal(c)
-}
-
-// DefaultBaseConfig returns base default configuration client
-func DefaultBaseConfig() *ClientConfiguration {
-	return &ClientConfiguration{
-		APIServerURL:       DefaultAPIServerURL,
-		ClientCertfile:     DefaultClientCertfile,
-		ServerNameOverride: DefaultServerNameOverride,
-	}
 }

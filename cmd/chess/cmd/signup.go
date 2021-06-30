@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 
-	"github.com/dumbogo/chess/client"
 	"github.com/dumbogo/chess/config"
 	"github.com/spf13/cobra"
 )
@@ -33,7 +32,7 @@ var signUpCmd = &cobra.Command{
 			log.Fatalf("Error: %v\n", err)
 		}
 		// TODO: add some steps to recognize which provider was used, at the moment we are going to leave it to github only
-		config.InitClientConfig()
-		client.RegisterGithubToken(string(token))
+		c := config.LoadClientConfiguration()
+		c.SetAuthToken(string(token))
 	},
 }
