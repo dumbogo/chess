@@ -24,7 +24,11 @@ var clientConfig *config.ClientConfiguration
 
 // InitConn loads configuration and initializes connection to server
 func InitConn() (*grpc.ClientConn, error) {
-	clientConfig = config.LoadClientConfiguration()
+	var err error
+	clientConfig, err = config.LoadClientConfiguration()
+	if err != nil {
+		return nil, err
+	}
 	// Set up the credentials for the connection.
 	perRPC := oauth.NewOauthAccess(&oauth2.Token{
 		AccessToken: clientConfig.AuthToken,

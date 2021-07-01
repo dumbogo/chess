@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/dumbogo/chess/config"
 	"github.com/spf13/cobra"
@@ -24,7 +25,10 @@ var defaultConfigCmd = &cobra.Command{
 	Short: "Print default configuration",
 	Long:  "Print default configuration with mandatory fields to play",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := config.NewClientConfiguration(config.WithDefaultBaseClientConfiguration())
+		c, err := config.NewClientConfiguration(config.WithDefaultBaseClientConfiguration())
+		if err != nil {
+			log.Fatalf("Unexpected error: %s", err)
+		}
 		str, err := c.Marshal()
 		if err != nil {
 			panic(err)
@@ -38,7 +42,10 @@ var viewConfigCmd = &cobra.Command{
 	Short: "Show current configuration",
 	Long:  "Print current configuration client chess game",
 	Run: func(cmd *cobra.Command, args []string) {
-		c := config.LoadClientConfiguration()
+		c, err := config.LoadClientConfiguration()
+		if err != nil {
+			log.Fatalf("Unexpected Error %s", err)
+		}
 		str, err := c.Marshal()
 		if err != nil {
 			panic(err)

@@ -18,5 +18,5 @@ data:
     db_name = "chess_api"
     [HTTP_server]
     Scheme = "http"
-    Host = "dev.aguileraglz.xyz"
+    Host = "localhost"
     Port = ":8080"

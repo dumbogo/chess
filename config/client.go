@@ -47,7 +47,7 @@ type gameClientConfig struct {
 }
 
 // LoadClientConfiguration loads config info from file configuration client
-func LoadClientConfiguration() *ClientConfiguration {
+func LoadClientConfiguration() (*ClientConfiguration, error) {
 	config := &ClientConfiguration{}
 
 	viper.SetConfigName(configName)
@@ -57,16 +57,15 @@ func LoadClientConfiguration() *ClientConfiguration {
 		err     error
 	)
 	if homeDir, err = os.UserHomeDir(); err != nil {
-		panic(fmt.Errorf("home directory not found %v", err))
+		return nil, fmt.Errorf("home directory not found %v", err)
 	}
 	configPath := path.Join(homeDir, configPath)
 	viper.AddConfigPath(configPath)
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Fatalf("Config file not found, please add a config file on %s directory", configPath)
-		} else {
-			panic(err)
+			return nil, fmt.Errorf("Config file not found, please add a config file on %s directory", configPath)
 		}
+		return nil, (err)
 	}
 	config.APIServerURL = viper.GetString("API_SERVER_URL")
 	config.ClientCertfile = viper.GetString("CLIENT_CERTFILE")
@@ -77,16 +76,16 @@ func LoadClientConfiguration() *ClientConfiguration {
 		Name:  viper.GetString("game.name"),
 		Color: viper.GetString("game.color"),
 	}
-	return config
+	return config, nil
 }
 
 // NewClientConfiguration returns new Client configuration
-func NewClientConfiguration(opts ...ClientConfigurationOption) *ClientConfiguration {
+func NewClientConfiguration(opts ...ClientConfigurationOption) (*ClientConfiguration, error) {
 	c := &ClientConfiguration{}
 	for _, opt := range opts {
 		opt(c)
 	}
-	return c
+	return c, nil
 }
 
 // ClientConfigurationOption option to configure client
@@ -95,7 +94,7 @@ type ClientConfigurationOption func(*ClientConfiguration)
 // WithDefaultBaseClientConfiguration option to configure default base configuration
 func WithDefaultBaseClientConfiguration() ClientConfigurationOption {
 	return func(c *ClientConfiguration) {
-		c.APIServerURL = "dev.aguileraglz.xyz:1443"
+		c.APIServerURL = "localhost"
 		c.ClientCertfile = "$HOME/.chess/certs/x509/client.crt"
 		c.ServerNameOverride = "www.fabrikam.com"
 	}

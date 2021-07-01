@@ -21,9 +21,12 @@ var signUpCmd = &cobra.Command{
 	Short: "Sign up on chess",
 	Long:  "Sign up on chess platform to start playing!",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		c, err := config.LoadClientConfiguration()
+		if err != nil {
+			panic(err)
+		}
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Printf("Visit http://dev.aguileraglz.xyz to signin and follow steps, click enter when you finish\n HIT ENTER")
+		fmt.Printf("Visit https://%s to signin and follow steps, click enter when you finish\n HIT ENTER", c.APIServerURL)
 		reader.ReadLine()
 
 		fmt.Print("Type your token here: ")
@@ -32,7 +35,6 @@ var signUpCmd = &cobra.Command{
 			log.Fatalf("Error: %v\n", err)
 		}
 		// TODO: add some steps to recognize which provider was used, at the moment we are going to leave it to github only
-		c := config.LoadClientConfiguration()
 		c.SetAuthToken(string(token))
 	},
 }

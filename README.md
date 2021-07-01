@@ -48,7 +48,7 @@ db_name = "chess_api"
 [HTTP_server]
 Scheme = "http"
 # This is necessary to configure in you auth github callback configuration
-Host = "dev.aguileraglz.xyz"
+Host = "yourdomainorip.com"
 Port = ":8080"
 ```
 In order to be able to use github auth, you need to configure a github application and oauth2
