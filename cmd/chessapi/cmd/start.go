@@ -6,49 +6,19 @@ import (
 	"log"
 	"net"
 	"net/url"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/dumbogo/chess/api"
 	pb "github.com/dumbogo/chess/api"
+	"github.com/dumbogo/chess/config"
 	"github.com/dumbogo/chess/messagebroker"
 )
 
 var (
-	configFile     string
-	configFileType = "toml"
-
-	// Env environent, production, test, development
-	Env string // ENV
-	// API config
-	apiPort       string // API.port
-	apiServerCert string // API.server_cert
-	apiServerKey  string // API.server_key
-
-	// Database config
-
-	dbHost string // Database.host
-	dbPort string // Database.port
-	dbName string // Database.db_name
-
-	// HTTP server
-	httpServerScheme string // HTTP_server.Scheme
-	httpServerHost   string // HTTP_server.Host
-	httpServerPort   string // HTTP_server.Port
-
-	// Sensitive config
-	dbUser     string // CHESS_API_DATABASE_USERNAME env
-	dbPassword string // CHESS_API_DATABASE_PASSWORD env
-
-	// Github credentials
-	githubKey    string // CHESS_API_GITHUB_KEY
-	githubSecret string // CHESS_API_GITHUB_SECRET
-
-	natsURL string // NATS_URL
+	configFile string
 )
 
 func init() {
@@ -57,77 +27,6 @@ func init() {
 	if err := startCmd.MarkFlagRequired("config"); err != nil {
 		panic(err)
 	}
-	cobra.OnInitialize(initConfig)
-}
-
-func initConfig() {
-	// Load config file
-	v := viper.New()
-	// use filepath
-	v.SetConfigName(filepath.Base(configFile))
-	v.SetConfigType(configFileType)
-	v.AddConfigPath(filepath.Dir(configFile))
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			if configFile != "" {
-				log.Fatalf("could not load file %s, please provide a valid one", configFile)
-			}
-		} else {
-			panic(err)
-		}
-	}
-	// Set default env to development if not set
-	Env = v.GetString("ENV")
-	if !(Env == api.EnvProduction || Env == api.EnvTest || Env == api.EnvDev) {
-		Env = api.EnvDev
-	}
-
-	apiPort = v.GetString("API.port")
-	apiServerCert = v.GetString("API.server_cert")
-	apiServerKey = v.GetString("API.server_key")
-
-	dbHost = v.GetString("Database.host")
-	dbPort = v.GetString("Database.port")
-	dbName = v.GetString("Database.db_name")
-
-	httpServerScheme = v.GetString("HTTP_server.Scheme")
-	httpServerHost = v.GetString("HTTP_server.Host")
-	httpServerPort = v.GetString("HTTP_server.Port")
-
-	// TODO: Set ENVS as mandatory
-	v.SetEnvPrefix("CHESS_API")
-	v.AllowEmptyEnv(false) // This doesn't work as expected
-
-	if err := v.BindEnv("DATABASE_USERNAME"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	if !v.IsSet("DATABASE_USERNAME") {
-		log.Fatalf("required env %s", "CHESS_API_DATABASE_USERNAME")
-	}
-	dbUser = v.GetString("database_username")
-
-	if err := v.BindEnv("DATABASE_PASSWORD"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	if !v.IsSet("DATABASE_PASSWORD") {
-		log.Fatalf("required env %s", "CHESS_API_DATABASE_PASSWORD")
-	}
-	dbPassword = v.GetString("database_password")
-
-	if err := v.BindEnv("GITHUB_KEY"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	githubKey = v.GetString("github_key")
-
-	if err := v.BindEnv("GITHUB_SECRET"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	githubSecret = v.GetString("github_secret")
-
-	if err := v.BindEnv("NATS_URL"); err != nil {
-		log.Fatalf("Unexpected error %s", err.Error())
-	}
-	natsURL = v.GetString("nats_url")
 }
 
 var startCmd = &cobra.Command{
@@ -135,12 +34,19 @@ var startCmd = &cobra.Command{
 	Short: "Start API server",
 	Long:  "Start API server",
 	Run: func(cmd *cobra.Command, args []string) {
-		lis, err := net.Listen("tcp", apiPort)
+		var (
+			configuration *config.ServerConfig
+			err           error
+		)
+		if configuration, err = config.LoadServerConfig(configFile); err != nil {
+			panic(err)
+		}
+		lis, err := net.Listen("tcp", configuration.APIPort)
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
 
-		cert, err := tls.LoadX509KeyPair(apiServerCert, apiServerKey)
+		cert, err := tls.LoadX509KeyPair(configuration.APIServerCert, configuration.APIServerKey)
 		if err != nil {
 			log.Fatalf("failed to load key pair: %s", err)
 		}
@@ -154,13 +60,13 @@ var startCmd = &cobra.Command{
 			grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 		}
 		s := grpc.NewServer(opts...)
-		db, err := api.InitDbConn(dbHost, dbPort, dbUser, dbPassword, dbName)
+		db, err := api.InitDbConn(configuration.DBHost, configuration.DBPort, configuration.DBUser, configuration.DBPassword, configuration.DBName)
 		if err != nil {
 			log.Fatalf("failed to connect databse: %v", err)
 		}
 
 		// Load nats connection
-		mb, err := messagebroker.New(messagebroker.Config{URL: natsURL})
+		mb, err := messagebroker.New(messagebroker.Config{URL: configuration.NATsURL})
 		if err != nil {
 			log.Fatalf("Failed to initialize nats: %v", err)
 		}
@@ -173,27 +79,27 @@ var startCmd = &cobra.Command{
 		go func() {
 			s, err := api.NewHTTPServer(
 				url.URL{
-					Scheme: httpServerScheme,
-					Host:   fmt.Sprintf("%s%s", httpServerHost, httpServerPort),
+					Scheme: configuration.HTTPServerScheme,
+					Host:   fmt.Sprintf("%s%s", configuration.HTTPServerHost, configuration.HTTPServerPort),
 				},
-				githubKey,
-				githubSecret,
+				configuration.GithubKey,
+				configuration.GithubSecret,
 				// Ensure your key is sufficiently random - i.e. use Go's
 				// crypto/rand or securecookie.GenerateRandomKey(32) and persist the result.
 				"somerandomtext",
-				Env,
+				configuration.ENV,
 			)
 			if err != nil {
 				log.Fatalf("Error: %v", err)
 			}
-			log.Printf("Listening HTTP server, on port %s\n", httpServerPort)
+			log.Printf("Listening HTTP server, on port %s\n", configuration.HTTPServerPort)
 			if err := s.Listen(); err != nil {
 				log.Fatalf("failed to serve: %v", err)
 			}
 		}()
 
 		// Load grpc server
-		log.Printf("Listening gRPC server, on port %s\n", apiPort)
+		log.Printf("Listening gRPC server, on port %s\n", configuration.APIPort)
 		if err := s.Serve(lis); err != nil {
 			log.Fatalf("failed to serve: %v", err)
 		}
