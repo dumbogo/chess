@@ -32,45 +32,6 @@ type Server struct {
 	Db *gorm.DB
 }
 
-func newGameWithoutPlayers(name string) Game {
-	engineSquares := engine.PristineSquares()
-	squares := make(Squares)
-	for i, v := range engineSquares {
-		sq := newBasicSquare(v)
-		if !sq.Empty {
-			sq.Piece = Piece{
-				PieceIdentifier: v.Piece.Identifier(),
-				Color:           v.Piece.Color(),
-			}
-		}
-		squares[i] = sq
-	}
-	return Game{
-		Name: name,
-		BlackPieces: map[uint8]uint8{
-			uint8(engine.RookIdentifier):   2,
-			uint8(engine.KnightIdentifier): 2,
-			uint8(engine.BishopIdentifier): 2,
-			uint8(engine.QueenIdentifier):  1,
-			uint8(engine.KingIdentifier):   1,
-			uint8(engine.PawnIdentifier):   8,
-		},
-		WhitePieces: map[uint8]uint8{
-			uint8(engine.RookIdentifier):   2,
-			uint8(engine.KnightIdentifier): 2,
-			uint8(engine.BishopIdentifier): 2,
-			uint8(engine.QueenIdentifier):  1,
-			uint8(engine.KingIdentifier):   1,
-			uint8(engine.PawnIdentifier):   8,
-		},
-		BoardSquares: squares,
-	}
-}
-
-func newBasicSquare(e engine.Square) Square {
-	return Square{e, Piece{}}
-}
-
 // StartGame starts a new game
 func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameRequest) (*StartGameResponse, error) {
 	user, e := getUserFromCtx(ctx)
@@ -253,6 +214,24 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 	}, nil
 }
 
+// EnsureValidToken ensures a valid token exists within a request's metadata. If
+// the token is missing or invalid, the interceptor blocks execution of the
+// handler and returns an error. Otherwise, the interceptor invokes the unary
+// handler.
+func EnsureValidToken(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, errMissingMetadata
+	}
+	// The keys within metadata.MD are normalized to lowercase.
+	// See: https://godoc.org/google.golang.org/grpc/metadata#New
+	if !valid(md["authorization"]) {
+		return nil, errInvalidToken
+	}
+	// Continue execution of handler after ensuring a valid token.
+	return handler(ctx, req)
+}
+
 func loadEngineGameFromDbValues(gameDb Game, turn engine.Player) (engine.Game, error) {
 	whitePlayer := engine.Player{Color: engine.WhiteColor}
 	blackPlayer := engine.Player{Color: engine.BlackColor}
@@ -296,24 +275,6 @@ func updateGameValuesFromGameEngine(gameDb *Game, gameEngine engine.Game) error 
 	return nil
 }
 
-// EnsureValidToken ensures a valid token exists within a request's metadata. If
-// the token is missing or invalid, the interceptor blocks execution of the
-// handler and returns an error. Otherwise, the interceptor invokes the unary
-// handler.
-func EnsureValidToken(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return nil, errMissingMetadata
-	}
-	// The keys within metadata.MD are normalized to lowercase.
-	// See: https://godoc.org/google.golang.org/grpc/metadata#New
-	if !valid(md["authorization"]) {
-		return nil, errInvalidToken
-	}
-	// Continue execution of handler after ensuring a valid token.
-	return handler(ctx, req)
-}
-
 // valid validates the authorization. Returns false if neither user, nor auth token found and token expired
 func valid(authorization []string) bool {
 	if len(authorization) < 1 {
@@ -345,4 +306,43 @@ func getUserFromCtx(ctx context.Context) (User, error) {
 	}
 	user := GetUserFromAccessToken(t)
 	return user, nil
+}
+
+func newGameWithoutPlayers(name string) Game {
+	engineSquares := engine.PristineSquares()
+	squares := make(Squares)
+	for i, v := range engineSquares {
+		sq := newBasicSquare(v)
+		if !sq.Empty {
+			sq.Piece = Piece{
+				PieceIdentifier: v.Piece.Identifier(),
+				Color:           v.Piece.Color(),
+			}
+		}
+		squares[i] = sq
+	}
+	return Game{
+		Name: name,
+		BlackPieces: map[uint8]uint8{
+			uint8(engine.RookIdentifier):   2,
+			uint8(engine.KnightIdentifier): 2,
+			uint8(engine.BishopIdentifier): 2,
+			uint8(engine.QueenIdentifier):  1,
+			uint8(engine.KingIdentifier):   1,
+			uint8(engine.PawnIdentifier):   8,
+		},
+		WhitePieces: map[uint8]uint8{
+			uint8(engine.RookIdentifier):   2,
+			uint8(engine.KnightIdentifier): 2,
+			uint8(engine.BishopIdentifier): 2,
+			uint8(engine.QueenIdentifier):  1,
+			uint8(engine.KingIdentifier):   1,
+			uint8(engine.PawnIdentifier):   8,
+		},
+		BoardSquares: squares,
+	}
+}
+
+func newBasicSquare(e engine.Square) Square {
+	return Square{e, Piece{}}
 }

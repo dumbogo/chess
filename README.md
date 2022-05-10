@@ -21,13 +21,9 @@ In order to run the server, you need to install some services:
 
 You can use docker-compose:
 ```sh
-$ docker network create chess
-$ docker-compose up -d
-```
-
-Or you can instead use `deps.sh`:
-```sh
-$ sh deps.sh
+$ docker network create chess && \
+$ docker-compose up -d postgres && \
+$ docker-compose up -d nats
 ```
 
 ### Run
@@ -51,6 +47,7 @@ Scheme = "http"
 Host = "yourdomainorip.com"
 Port = ":8080"
 ```
+
 In order to be able to use github auth, you need to configure a github application and oauth2
 
 Make sure you have the corresponding `server_cert` and `server_key` on your system, the repository has some pregenerated files within `certs` directory.
@@ -74,6 +71,14 @@ $ chessapi migrate -c config.toml
 $ chessapi start -c config.toml
 ```
 
+You can run the project with Docker:
+
+```
+# Review if network is already created:
+$ docker network create chess || true
+$ docker-compose up
+```
+
 ## Client
 ### Install
 
@@ -94,13 +99,15 @@ To configure your client, you need to add a TOML config file on `$HOME/.chess/co
 ```sh
 # create folders:
 $ mkdir -p ~/.chess/certs/x509
-$ chess config default > ~/.chess/config
+$ chess config default > ~/.chess/config.toml
 ```
 
 Also, you need to add the client certfile on `$HOME/.chess/certs/` location, you can use the samples on `certs`.
 WARNING! the certs on `certs` folder are for dev purpoeses only
 
 ### Play
+
+#### Signup first:
 ```sh
 $ chess help
 Chess multi-player game on terminal
@@ -121,4 +128,13 @@ Flags:
   -h, --help   help for chess
 
 Use "chess [command] --help" for more information about a command.
+```
+
+```sh
+$ chess signup
+# Follow steps...
+```
+
+```sh
+$ chess start -n foo
 ```

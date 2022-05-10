@@ -102,9 +102,14 @@ func WithDefaultBaseClientConfiguration() ClientConfigurationOption {
 
 // UpdateGame update Game Configuration and persist it
 func (cc *ClientConfiguration) UpdateGame(uuid string, name string, color string) error {
+	cc.Game.UUID = uuid
+	cc.Game.Name = name
+	cc.Game.Color = color
+
 	viper.Set("game.uuid", cc.Game.UUID)
 	viper.Set("game.name", cc.Game.Name)
 	viper.Set("game.color", cc.Game.Color)
+
 	if err := viper.WriteConfig(); err != nil {
 		log.Fatalf("Unexpected Error: %s", err.Error())
 		return err
