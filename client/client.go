@@ -119,7 +119,7 @@ func Watch(conn *grpc.ClientConn, uuid string) {
 	if err != nil {
 		log.Fatalf("could not watch game: %v", err)
 	}
-	fmt.Printf("Watching game...")
+	fmt.Printf("Watching game...\n")
 	for {
 		watchResponse, err := stream.Recv()
 		if err == io.EOF {
@@ -129,7 +129,8 @@ func Watch(conn *grpc.ClientConn, uuid string) {
 		if err != nil {
 			log.Fatalf("%v.Watch(_) = _, %v", c, err)
 		}
-		fmt.Printf("Turn: %s\n", watchResponse.GetTurn())
+		fmt.Printf("Turn player: %s\n", watchResponse.GetTurn())
+
 		fmt.Printf("Status: %s\n", watchResponse.GetStatus())
 		fmt.Println(watchResponse.GetBoard())
 	}

@@ -60,28 +60,39 @@ type User struct {
 }
 
 // GetUserFromAccessToken returns user from database with accesstoken set
-func GetUserFromAccessToken(accessToken string) User {
+func GetUserFromAccessToken(accessToken string) *User {
 	// TODO: Salt AccessToken
 	user := User{}
-	DBConn.Where("access_token=?", accessToken).First(&user)
-	return user
+	tx := DBConn.Where("access_token=?", accessToken).First(&user)
+	if tx.Error != nil {
+		if tx.Error == gorm.ErrRecordNotFound {
+			return nil
+		}
+
+		log.Fatal(tx.Error)
+		return nil
+	}
+	return &user
 }
 
 // Game Model
 type Game struct {
 	gorm.Model
-	Name          string
-	UUID          uuid.UUID `gorm:"type:uuid;not null;default:uuid_generate_v1()"`
-	WhitePlayer   Player
+	Name string
+	UUID uuid.UUID `gorm:"type:uuid;not null;default:uuid_generate_v1()"`
+
+	WhitePlayer   Player `gorm:"foreignKey:WhitePlayerID"`
 	WhitePlayerID sql.NullInt32
-	BlackPlayer   Player
+
+	BlackPlayer   Player `gorm:"foreignKey:BlackPlayerID"`
 	BlackPlayerID sql.NullInt32
-	Turn          uint
-	Winner        int
-	Movements     []Movement // TODO: this will cause problems, implement when its needed by the engine
-	WhitePieces   pieces     `gorm:"type:jsonb;not null"`
-	BlackPieces   pieces     `gorm:"type:jsonb;not null"`
-	BoardSquares  Squares    `gorm:"type:jsonb;not null"`
+
+	Turn         uint
+	Winner       int
+	Movements    []Movement // TODO: this will cause problems, implement when its needed by the engine
+	WhitePieces  pieces     `gorm:"type:jsonb;not null"`
+	BlackPieces  pieces     `gorm:"type:jsonb;not null"`
+	BoardSquares Squares    `gorm:"type:jsonb;not null"`
 }
 
 // AfterSave ...
@@ -89,10 +100,16 @@ func (g *Game) AfterSave(tx *gorm.DB) (err error) {
 	if MessageBroker == nil {
 		return nil
 	}
+
+	turnColor := "white"
+	if g.Turn == uint(g.BlackPlayerID.Int32) {
+		turnColor = "black"
+	}
+
 	board := engine.LoadBoard(&engine.Player{}, &engine.Player{}, squaresToEngineSquares(g.BoardSquares))
 	bytes, err := json.Marshal(payloadUpdateGame{
 		Turn:   fmt.Sprint(g.Turn), // TODO: add corresponding color player
-		Status: "somestatus",       // TODO: add the corresponding status
+		Status: fmt.Sprintf("%s turn", turnColor),
 		Board:  board.String(),
 	})
 	if err != nil {

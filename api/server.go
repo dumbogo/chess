@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -38,7 +39,9 @@ func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameReque
 	if e != nil {
 		return nil, e
 	}
+
 	game := newGameWithoutPlayers(startGameRequest.GetName())
+
 	switch startGameRequest.GetColor() {
 	case Color_WHITE:
 		p := Player{
@@ -57,6 +60,7 @@ func (s *Server) StartGame(ctx context.Context, startGameRequest *StartGameReque
 		game.BlackPlayerID = sql.NullInt32{Valid: true, Int32: int32(p.ID)}
 		game.Turn = p.ID
 	}
+
 	result := s.Db.Create(&game)
 	if result.Error != nil {
 		return nil, result.Error
@@ -123,6 +127,7 @@ func (s *Server) JoinGame(ctx context.Context, r *JoinGameRequest) (*JoinGameRes
 
 // Watch receive live updates on the current game loaded
 func (s *Server) Watch(r *WatchRequest, stream ChessService_WatchServer) error {
+	// TODO: send a message when is either check or checkmate
 	if MessageBroker == nil {
 		log.Printf("Message broker not initialized, prompts error")
 		return errors.New("internal server error")
@@ -131,6 +136,33 @@ func (s *Server) Watch(r *WatchRequest, stream ChessService_WatchServer) error {
 	if err != nil {
 		return err
 	}
+
+	// Send for the first time, the board
+	gameDb := Game{}
+	tx := DBConn.Where("uuid=?", r.GetUuid()).Joins("join players on players.id = white_player_id").First(&gameDb)
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	gameEngine, err := loadEngineGameFromDbValues(gameDb, engine.Player{})
+	if err != nil {
+		return err
+	}
+
+	turnColor := "white"
+	if gameDb.Turn == uint(gameDb.BlackPlayerID.Int32) {
+		turnColor = "black"
+	}
+
+	if err := stream.Send(&WatchResponse{
+		Status: fmt.Sprintf("%s turn", turnColor),
+		Turn:   gameEngine.Turn().Name,
+		Board:  gameEngine.Board().String(),
+	}); err != nil {
+		return err
+	}
+
+	// Wait on updates for new movements
 	for msg := range chMsgs {
 		payload := payloadUpdateGame{}
 		if err := json.Unmarshal(msg.Payload, &payload); err != nil {
@@ -149,10 +181,16 @@ func (s *Server) Watch(r *WatchRequest, stream ChessService_WatchServer) error {
 
 // Move Moves a player piece
 func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error) {
+	log.Printf("Moving piece, req: %+v\n", r)
 	user, e := getUserFromCtx(ctx)
 	if e != nil {
 		return nil, e
 	}
+
+	if user == nil {
+		return nil, fmt.Errorf("user not found")
+	}
+
 	// Extract game and players from db
 	// TODO: gorm joins func is not working as expected, review
 	gameDb := Game{}
@@ -160,23 +198,41 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 	if tx.Error != nil {
 		return nil, tx.Error
 	}
+
 	whitePlayerDb := Player{}
 	tx = DBConn.Where("id=?", gameDb.WhitePlayerID.Int32).First(&whitePlayerDb)
 	if tx.Error != nil {
-		return nil, tx.Error
-	}
-	blackPlayerDb := Player{}
-	tx = DBConn.Where("id=?", gameDb.BlackPlayerID.Int32).First(&blackPlayerDb)
-	if tx.Error != nil {
+		if tx.Error == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("white player is missing")
+		}
 		return nil, tx.Error
 	}
 
-	// Validate turn
-	if uint(gameDb.Turn) == whitePlayerDb.ID {
+	blackPlayerDb := Player{}
+	tx = DBConn.Where("id=?", gameDb.BlackPlayerID.Int32).First(&blackPlayerDb)
+	if tx.Error != nil {
+		if tx.Error == gorm.ErrRecordNotFound {
+			return nil, fmt.Errorf("black player is missing")
+		}
+		return nil, tx.Error
+	}
+
+	log.Printf("white player: %+v\n", whitePlayerDb)
+	log.Printf("black player: %+v\n", blackPlayerDb)
+
+	log.Printf("User : %+v\n", user)
+
+	// validate turn color and if user is any player
+	if gameDb.Turn == whitePlayerDb.ID {
 		if user.ID != whitePlayerDb.UserID {
-			return nil, errors.New("not your turn")
+			return nil, errors.New("Not your turn")
+		}
+	} else if gameDb.Turn == blackPlayerDb.ID {
+		if user.ID != blackPlayerDb.UserID {
+			return nil, errors.New("Not your turn")
 		}
 	}
+
 	nextTurn := uint(whitePlayerDb.ID)
 	turnPlayer := engine.Player{
 		Color: engine.WhiteColor,
@@ -195,12 +251,20 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 
 	from, ok := engine.StringToSquareIdentifier(strings.ToUpper(r.GetFromSquare()))
 	if !ok {
-		return nil, errors.New("Invalid square identifier")
+		return nil, errors.New("Invalid \"from\" square identifier")
 	}
+
+	// Review if from piece is from player
+	squareFrom := gameEngine.Board().Squares()[from]
+	if !squareFrom.Empty && squareFrom.Piece.Color() != turnPlayer.Color {
+		return nil, errors.New("Not your piece color")
+	}
+
 	to, ok := engine.StringToSquareIdentifier(strings.ToUpper(r.GetToSquare()))
 	if !ok {
-		return nil, errors.New("Invalid square identifier")
+		return nil, errors.New("Invalid \"to\" square identifier")
 	}
+
 	if ok, e = gameEngine.Move(turnPlayer, from, to); !ok {
 		return nil, e
 	}
@@ -209,6 +273,8 @@ func (s *Server) Move(ctx context.Context, r *MoveRequest) (*MoveResponse, error
 	if err := updateGameValuesFromGameEngine(&gameDb, gameEngine); err != nil {
 		return nil, err
 	}
+
+	// TODO: Send response checkmate or check when it happens
 	return &MoveResponse{
 		Board: gameEngine.Board().String(),
 	}, nil
@@ -299,13 +365,13 @@ func GetAccessTokenFromCtx(ctx context.Context) (string, error) {
 	return accessToken, nil
 }
 
-func getUserFromCtx(ctx context.Context) (User, error) {
+func getUserFromCtx(ctx context.Context) (*User, error) {
 	t, e := GetAccessTokenFromCtx(ctx)
 	if e != nil {
-		return User{}, e
+		return nil, e
 	}
-	user := GetUserFromAccessToken(t)
-	return user, nil
+
+	return GetUserFromAccessToken(t), nil
 }
 
 func newGameWithoutPlayers(name string) Game {
