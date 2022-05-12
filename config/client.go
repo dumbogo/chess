@@ -19,8 +19,11 @@ const (
 
 // ClientConfiguration configuration set by the client to interact with the game
 type ClientConfiguration struct {
-	// APIServerURL URL API to make calls
+	// APIServerURL gRPC API Chess game
 	APIServerURL string // API_SERVER_URL
+
+	// HTTPServerURL HTTP server URL
+	HTTPServerURL string //
 
 	// ClientCertfile client certificate TLS location file
 	ClientCertfile string // CLIENT_CERTFILE
@@ -71,6 +74,7 @@ func LoadClientConfiguration() (*ClientConfiguration, error) {
 	config.ClientCertfile = viper.GetString("CLIENT_CERTFILE")
 	config.ServerNameOverride = viper.GetString("SERVERNAME_OVERRIDE")
 	config.AuthToken = viper.GetString("oauth2.github.token") // TODO: hardcoded to github, change it when implementing more providers
+	config.HTTPServerURL = viper.GetString("http_server_url")
 	config.Game = &gameClientConfig{
 		UUID:  viper.GetString("game.uuid"),
 		Name:  viper.GetString("game.name"),
@@ -97,6 +101,16 @@ func WithDefaultBaseClientConfiguration() ClientConfigurationOption {
 		c.APIServerURL = "localhost"
 		c.ClientCertfile = "$HOME/.chess/certs/x509/client.crt"
 		c.ServerNameOverride = "www.fabrikam.com"
+		c.HTTPServerURL = "localhost"
+	}
+}
+
+func WithTestServer() ClientConfigurationOption {
+	return func(c *ClientConfiguration) {
+		c.APIServerURL = "grpc.aguileraglz.xyz:1443"
+		c.ClientCertfile = "$HOME/.chess/certs/x509/client.crt"
+		c.ServerNameOverride = "www.fabrikam.com"
+		c.HTTPServerURL = "dev.aguileraglz.xyz"
 	}
 }
 
@@ -143,6 +157,7 @@ func (cc *ClientConfiguration) Marshal() ([]byte, error) {
 	v.Set("CLIENT_CERTFILE", cc.ClientCertfile)
 	v.Set("SERVERNAME_OVERRIDE", cc.ServerNameOverride)
 	v.Set("oauth2.github.token", cc.AuthToken)
+	v.Set("http_server_url", cc.HTTPServerURL)
 
 	if cc.Game != nil {
 		v.Set("game.uuid", cc.Game.UUID)

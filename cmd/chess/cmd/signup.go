@@ -26,7 +26,7 @@ var signUpCmd = &cobra.Command{
 			panic(err)
 		}
 		reader := bufio.NewReader(os.Stdin)
-		fmt.Printf("Visit https://%s to signin and follow steps, click enter when you finish\n HIT ENTER", c.APIServerURL)
+		fmt.Printf("Visit http://%s to signin and follow steps, click enter when you finish\n HIT ENTER", c.HTTPServerURL)
 		reader.ReadLine()
 
 		fmt.Print("Type your token here: ")

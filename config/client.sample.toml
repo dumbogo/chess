@@ -3,6 +3,9 @@ title = "Client TOML config sample"
 ## GRPC server game url
 api_server_url = "localhost:8000"
 
+# Server to locate interactions that are not by gRPC
+http_server_url = "localhost:8080"
+
 # Client_certfile TLS connection to GRPC server
 client_certfile = "$HOME/.chess/certs/x509/contoso.crt"
 

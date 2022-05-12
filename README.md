@@ -107,7 +107,7 @@ WARNING! the certs on `certs` folder are for dev purpoeses only
 
 ### Play
 
-#### Signup first:
+An easy way to look up to some subcommands is:
 ```sh
 $ chess help
 Chess multi-player game on terminal
@@ -130,6 +130,16 @@ Flags:
 Use "chess [command] --help" for more information about a command.
 ```
 
+
+#### Configure alpha server:
+You can use an alpha server for an alpha version of the game:
+```sh
+$ chess config alpha
+```
+
+
+
+#### Signup first:
 ```sh
 $ chess signup
 # Follow steps...
